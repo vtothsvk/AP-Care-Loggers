@@ -23,7 +23,6 @@
 #else
 #define PIR_PIN      33
 #endif
-#endif
 
 #ifdef _DOOR
 #include <VL53L0X.h>
@@ -33,8 +32,8 @@ VL53L0X tof;
 
 #ifdef _BED
 #include <Adafruit_BME680.h>
-#define PIR_PIN      36
-#define FSR_PIN      33
+#define PIR_PIN      33
+#define FSR_PIN      32
 
 Adafruit_BME680 bme;
 #endif
@@ -143,11 +142,11 @@ void setup(){
     #endif
 
     #ifdef _KITCHEN
-    //Wire.begin(32, 33);
+    Wire.begin(32, 33);
     #endif
 
     #ifdef _BED
-    //Wire.begin(32, 33);
+    Wire.begin(32, 33);
     #endif
     /*
     WiFi.begin(ssid, pass);
@@ -206,7 +205,7 @@ void loop(){
 
   float dummy = 0;
   Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
-  event(pir, fsr, dummy, dummy, dummy, bat);
+  event(pir, fsr, dummy, dummy,)
   #endif
   
   delay(1000);
