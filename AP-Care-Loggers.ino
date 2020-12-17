@@ -23,6 +23,7 @@
 #else
 #define PIR_PIN      33
 #endif
+#endif
 
 #ifdef _DOOR
 #include <VL53L0X.h>
@@ -142,11 +143,11 @@ void setup(){
     #endif
 
     #ifdef _KITCHEN
-    Wire.begin(32, 33);
+    //Wire.begin(32, 33);
     #endif
 
     #ifdef _BED
-    Wire.begin(32, 33);
+    //Wire.begin(32, 33);
     #endif
     /*
     WiFi.begin(ssid, pass);
