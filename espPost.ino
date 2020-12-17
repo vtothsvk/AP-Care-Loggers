@@ -15,7 +15,12 @@
 //#define _BED
 //#define _Kitchen
 
+#define _PIR_HAT
+
 #ifdef _HALLWAY
+#ifdef _PIR_HAT
+#define PIR_PIN      36
+#else
 #define PIR_PIN      33
 #endif
 
