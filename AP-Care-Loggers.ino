@@ -23,6 +23,7 @@
 #else
 #define PIR_PIN      33
 #endif
+#endif
 
 #ifdef _DOOR
 #include <VL53L0X.h>
