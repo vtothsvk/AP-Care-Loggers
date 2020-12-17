@@ -142,11 +142,11 @@ void setup(){
     #endif
 
     #ifdef _KITCHEN
-    Wire.begin(32, 33);
+    //Wire.begin(32, 33);
     #endif
 
     #ifdef _BED
-    Wire.begin(32, 33);
+    //Wire.begin(32, 33);
     #endif
     /*
     WiFi.begin(ssid, pass);
@@ -202,8 +202,12 @@ void loop(){
   #ifdef _BED
   bool pir = digitalRead(PIR_PIN);
   uint16_t fsr = analogRead(FSR_PIN);
+
+  float dummy = 0;
+  Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
+  event(pir, fsr, dummy, dummy, dummy, bat);
   #endif
-  //Serial.print(pir);
+  
   delay(1000);
 }//loop
 
