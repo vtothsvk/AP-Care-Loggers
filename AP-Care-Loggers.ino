@@ -233,7 +233,7 @@ void loop(){
   #ifdef _HALLWAY
   bool pir = digitalRead(PIR_PIN);
   Serial.printf("Pir: %d\r\nBat: %.2f\r\n", pir, bat);
-  //event(pir, bat);
+  event(pir, bat);
   #endif
 
   #ifdef _DOOR
