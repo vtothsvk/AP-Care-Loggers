@@ -5,8 +5,10 @@
 #include <WiFiClient.h>
 #include "WebServer.h"
 #include <Preferences.h>
-//#include "DHT12.h"
+//#include "DHT12.h" 
 #include <Wire.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 #include "newAuth.h"
 #include "time.h"
 
@@ -15,13 +17,14 @@
 //#define _BED
 //#define _Kitchen
 
-#define _PIR_HAT
+//#define _PIR_HAT
 
 #ifdef _HALLWAY
 #ifdef _PIR_HAT
 #define PIR_PIN      36
 #else
 #define PIR_PIN      33
+#endif
 #endif
 
 #ifdef _DOOR
@@ -179,6 +182,41 @@ void setup(){
     esp_deep_sleep_start();
     */
 
+  ArduinoOTA
+  .onStart([]() {
+  String type;
+  if (ArduinoOTA.getCommand() == U_FLASH)
+    type = "sketch";
+  else // U_SPIFFS
+    type = "filesystem";
+
+  // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+  Serial.println("Start updating " + type);
+  })
+    
+  .onEnd([]() {
+  Serial.println("\nEnd");
+  })
+  .onProgress([](unsigned int progress, unsigned int total) {
+  Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  M5.Lcd.setCursor(0, 1);
+  M5.Lcd.printf("Progress: %u%%     \r", (progress / (total / 100)));
+  })
+  .onError([](ota_error_t error) {
+  Serial.printf("Error[%u]: ", error);
+  if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+  else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+  else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+  else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+  else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+
+  ArduinoOTA.begin();
+
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
    #ifdef _HALLWAY
    pinMode(PIR_PIN, INPUT);
    #endif
@@ -187,10 +225,15 @@ void setup(){
 void loop(){
   float bat = M5.Axp.GetBatVoltage();
 
+  if (M5.BtnA.wasPressed()) {
+    Serial.println("Blink Motherfucker!");
+    OTAhandler();
+  }
+
   #ifdef _HALLWAY
   bool pir = digitalRead(PIR_PIN);
   Serial.printf("Pir: %d\r\nBat: %.2f\r\n", pir, bat);
-  event(pir, bat);
+  //event(pir, bat);
   #endif
 
   #ifdef _DOOR
@@ -207,7 +250,7 @@ void loop(){
   Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
   event(pir, fsr, dummy, dummy,)
   #endif
-  
+  M5.update();
   delay(1000);
 }//loop
 
@@ -324,13 +367,13 @@ boolean restoreConfig() {
   wifi_ssid = preferences.getString("WIFI_SSID");
   wifi_password = preferences.getString("WIFI_PASSWD");
   Serial.print("WIFI-SSID: ");
-  M5.Lcd.print("WIFI-SSID: ");
+  //M5.Lcd.print("WIFI-SSID: ");
   Serial.println(wifi_ssid);
-  M5.Lcd.println(wifi_ssid);
+  //M5.Lcd.println(wifi_ssid);
   Serial.print("WIFI-PASSWD: ");
-  M5.Lcd.print("WIFI-PASSWD: ");
+  //M5.Lcd.print("WIFI-PASSWD: ");
   Serial.println(wifi_password);
-  M5.Lcd.println(wifi_password);
+  //M5.Lcd.println(wifi_password);
   WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
 
   if(wifi_ssid.length() > 0) {
@@ -343,32 +386,32 @@ boolean restoreConfig() {
 boolean checkConnection() {
   int count = 0;
   Serial.print("Waiting for Wi-Fi connection");
-  M5.Lcd.print("Waiting for Wi-Fi connection");
+  //M5.Lcd.print("Waiting for Wi-Fi connection");
   while ( count < 30 ) {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println();
-      M5.Lcd.println();
+      //M5.Lcd.println();
       Serial.println("Connected!");
-      M5.Lcd.println("Connected!");
+      //M5.Lcd.println("Connected!");
       needConnect = false;
       return (true);
     }
     delay(500);
     Serial.print(".");
-    M5.Lcd.print(".");
+    //M5.Lcd.print(".");
     count++;
   }
   Serial.println("Timed out.");
-  M5.Lcd.println("Timed out.");
+  //M5.Lcd.println("Timed out.");
   return false;
 }
 
 void startWebServer() {
   if (settingMode) {
     Serial.print("Starting Web Server at ");
-    M5.Lcd.print("Starting Web Server at ");
+    //M5.Lcd.print("Starting Web Server at ");
     Serial.println(WiFi.softAPIP());
-    M5.Lcd.println(WiFi.softAPIP());
+    //M5.Lcd.println(WiFi.softAPIP());
     webServer.on("/settings", []() {
       String s = "<h1>Wi-Fi Settings</h1><p>Please enter your password by selecting the SSID.</p>";
       s += "<form method=\"get\" action=\"setap\"><label>SSID: </label><select name=\"ssid\">";
@@ -380,26 +423,26 @@ void startWebServer() {
       //String ssid = urlDecode(webServer.arg("ssid"));
       String ssid = webServer.arg("ssid");
       Serial.print("SSID: ");
-      M5.Lcd.print("SSID: ");
+      //M5.Lcd.print("SSID: ");
       Serial.println(ssid);
-      M5.Lcd.println(ssid);
+      //M5.Lcd.println(ssid);
       //String pass = urlDecode(webServer.arg("pass"));
       String pass = webServer.arg("pass");
       Serial.print("Password: ");
-      M5.Lcd.print("Password: ");
+      //M5.Lcd.print("Password: ");
       Serial.println(pass);
-      M5.Lcd.println(pass);
+      //M5.Lcd.println(pass);
       Serial.println("Writing SSID to EEPROM...");
-      M5.Lcd.println("Writing SSID to EEPROM...");
+      //M5.Lcd.println("Writing SSID to EEPROM...");
 
       // Store wifi config
       Serial.println("Writing Password to nvr...");
-      M5.Lcd.println("Writing Password to nvr...");
+      //M5.Lcd.println("Writing Password to nvr...");
       preferences.putString("WIFI_SSID", ssid);
       preferences.putString("WIFI_PASSWD", pass);
 
       Serial.println("Write nvr done!");
-      M5.Lcd.println("Write nvr done!");
+      //M5.Lcd.println("Write nvr done!");
       String s = "<h1>Setup complete.</h1><p>device will be connected to \"";
       s += ssid;
       s += "\" after the restart.";
@@ -414,9 +457,9 @@ void startWebServer() {
   }
   else {
     Serial.print("Starting Web Server at ");
-    M5.Lcd.print("Starting Web Server at ");
+    //M5.Lcd.print("Starting Web Server at ");
     Serial.println(WiFi.localIP());
-    M5.Lcd.println(WiFi.localIP());
+    //M5.Lcd.println(WiFi.localIP());
     webServer.on("/", []() {
       String s = "<h1>STA mode</h1><p><a href=\"/reset\">Reset Wi-Fi Settings</a></p>";
       webServer.send(200, "text/html", makePage("STA mode", s));
@@ -441,7 +484,7 @@ void setupMode() {
   int n = WiFi.scanNetworks();
   delay(100);
   Serial.println("");
-  M5.Lcd.println("");
+  //M5.Lcd.println("");
   for (int i = 0; i < n; ++i) {
     ssidList += "<option value=\"";
     ssidList += WiFi.SSID(i);
@@ -458,11 +501,11 @@ void setupMode() {
   // dnsServer.start(53, "*", apIP);
   startWebServer();
   Serial.print("Starting Access Point at \"");
-  M5.Lcd.print("Starting Access Point at \"");
+  //M5.Lcd.print("Starting Access Point at \"");
   Serial.print(apSSID);
-  M5.Lcd.print(apSSID);
+  //M5.Lcd.print(apSSID);
   Serial.println("\"");
-  M5.Lcd.println("\"");
+  //M5.Lcd.println("\"");
 }
 
 String makePage(String title, String contents) {
@@ -476,37 +519,27 @@ String makePage(String title, String contents) {
   return s;
 }
 
-String urlDecode(String input) {
-  String s = input;
-  s.replace("%20", " ");
-  s.replace("+", " ");
-  s.replace("%21", "!");
-  s.replace("%22", "\"");
-  s.replace("%23", "#");
-  s.replace("%24", "$");
-  s.replace("%25", "%");
-  s.replace("%26", "&");
-  s.replace("%27", "\'");
-  s.replace("%28", "(");
-  s.replace("%29", ")");
-  s.replace("%30", "*");
-  s.replace("%31", "+");
-  s.replace("%2C", ",");
-  s.replace("%2E", ".");
-  s.replace("%2F", "/");
-  s.replace("%2C", ",");
-  s.replace("%3A", ":");
-  s.replace("%3A", ";");
-  s.replace("%3C", "<");
-  s.replace("%3D", "=");
-  s.replace("%3E", ">");
-  s.replace("%3F", "?");
-  s.replace("%40", "@");
-  s.replace("%5B", "[");
-  s.replace("%5C", "\\");
-  s.replace("%5D", "]");
-  s.replace("%5E", "^");
-  s.replace("%5F", "-");
-  s.replace("%60", "`");
-  return s;
+void OTAhandler(){
+  M5.Axp.ScreenBreath(255);
+  M5.Lcd.setCursor(0, 1);
+  M5.Lcd.println("Preparing OTA");
+  delay(5000);
+  M5.update();
+  M5.Lcd.setCursor(0, 1);
+  M5.Lcd.println("             ");
+  M5.Lcd.setCursor(0, 1);
+  M5.Lcd.printf("Waiting for\nFW");
+
+  while (true) {
+    ArduinoOTA.handle();
+
+    if(M5.BtnA.wasPressed()) {
+      Serial.printf("End OTA\r\n");
+      M5.Lcd.setCursor(0, 1);
+      M5.Lcd.println("           ");
+      M5.Axp.ScreenBreath(0);
+      return;
+    }
+    M5.update();
+  }
 }
