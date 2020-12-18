@@ -15,7 +15,7 @@
 #define _HALLWAY
 //#define _DOOR
 //#define _BED
-//#define _Kitchen
+//#define _KITCHEN
 
 //#define _PIR_HAT
 
@@ -41,7 +41,11 @@ VL53L0X tof;
 Adafruit_BME680 bme;
 #endif
 
-#define LIGHT_PIN    23
+#ifdef _KITCHEN
+#include <Adafruit_BME680.h>
+#define PIR_PIN      36
+#define LIGHT_PIN    0
+#endif
 
 #define cTime        10000
 #define cSleepTime   10
@@ -59,6 +63,10 @@ void event(uint16_t dist, float bat);
 
 #ifdef _BED
 void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat);
+#endif
+
+#ifdef _KITCHEN
+void event(bool pir, uint16_t light, float temp, float hum, float smoke, float bat);
 #endif
 
 const char* ntpServer = "pool.ntp.org";
@@ -145,7 +153,11 @@ void setup(){
     #endif
 
     #ifdef _KITCHEN
-    Wire.begin(32, 33);
+    pinMode(PIR_PIN, INPUT);
+    pinMode(LIGHT_PIN, INPUT);
+
+    Wire.begin();
+    bme.begin();
     #endif
 
     #ifdef _BED
@@ -246,9 +258,34 @@ void loop(){
   bool pir = digitalRead(PIR_PIN);
   uint16_t fsr = analogRead(FSR_PIN);
 
+  float temp = bme.readTemperature();
+  float hum = bme.readHumidity();
+  float smoke = bme.readGas();
+
+  Serial.printf("Pir: %d\r\nFSR: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, fsr, temp, hum, smoke);
+  event(pir, fsr, temp, hum, smoke);
+  /*
   float dummy = 0;
   Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
   event(pir, fsr, dummy, dummy,)
+  */
+  #endif
+
+  #ifdef _KITCHEN
+  bool pir = digitalRead(PIR_PIN);
+  uint16_t light = analogRead(LIGHT_PIN);
+
+  float temp = bme.readTemperature();
+  float hum = bme.readHumidity();
+  float smoke = bme.readGas();
+
+  Serial.printf("Pir: %d\r\nLight: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, light, temp, hum, smoke);
+  event(pir, light, temp, hum, smoke);
+  /*
+  float dummy = 0;
+  Serial.printf("Pir: %d\r\nLight: %d\r\n", pir, light);
+  event(pir, light, dummy, dummy,)
+  */
   #endif
   M5.update();
   delay(1000);
@@ -334,6 +371,44 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     sprintf(&payload[0], "\
     [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Temperature\",\"Value\": %f }, { \"Name\": \"Humidity\",\"Value\": %f }, { \"Name\": \"Smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
+    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, myId, (long)epoch, hum, myId, (long)epoch, smoke, myId, (long)epoch, bat, myId);
+    Serial.print(payload);
+    char myjwt[400];
+    char hjwt[410] = "Bearer ";
+    size_t jlen;
+    auth.createJWT((uint8_t*)myjwt, sizeof(myjwt), &jlen, epoch);
+    strcat(hjwt, myjwt);
+    Serial.printf("auth: %s\r\n", hjwt);
+
+    http.begin(serverName);
+
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", hjwt);
+
+    int ret = http.POST(payload);
+    //kontrola responsu
+    if(ret != 200){
+      Serial.printf("ret: %d", ret);
+    } else {
+      Serial.println("OK");
+    }
+
+    //koniec
+    http.end();
+}
+#endif
+
+#ifdef _KITCHEN
+void event(bool pir, uint16_t light, float temp, float hum, float smoke, float bat){
+    struct tm mytime;
+    getLocalTime(&mytime);
+    time_t epoch = mktime(&mytime);
+    Serial.printf("Timestamp: %ld", (long)epoch);
+    sprintf(&payload[0], "\
+    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Temperature\",\"Value\": %f }, { \"Name\": \"Humidity\",\"Value\": %f }, { \"Name\": \"Smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
     (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, myId, (long)epoch, hum, myId, (long)epoch, smoke, myId, (long)epoch, bat, myId);
