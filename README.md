@@ -50,26 +50,26 @@ To connect your device to a WiFi network:
 
 1. Turn on device
 
-Device will check if it has valid wifi credentials and will try to connect to a network, on connection fail the device creates an acces point with the **nice-AP** SSID, where it will start a web serverwaiting for wifi credentials provisioning
+  Device will check if it has valid wifi credentials and will try to connect to a network, on connection fail the device creates an acces point with the **nice-AP** SSID, where it will start a web serverwaiting for wifi credentials provisioning
 
 2. Connect to the nice-AP AP
 
-*Using a smartphone is recommended*
+  *Using a smartphone is recommended*
 
-<img src="https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png" alt="image1" width="200"/>
+  <img src="https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png" alt="image1" width="200"/>
 
 3. Using any HTTP 1.1 compatible browser navigate to **192.168.1.4**
 
-![Image of goto 192.169.4.1](https://i.ibb.co/KNKmjpL/Screenshot-20210111-111307.png = 250x)
+  <img src="https://i.ibb.co/KNKmjpL/Screenshot-20210111-111307.png" alt="image2" width="200"/>
 
 4. Select Wi-Fi settings
 
-![Image of Click WiFi Settings](https://i.ibb.co/4Wf7frx/Screenshot-20210111-110445.png = 250x)
+  <img src="https://i.ibb.co/4Wf7frx/Screenshot-20210111-110445.png" alt="image3" width="200"/>
 
 5. Setup Wi-Fi crerdentials and submit
 
-![Image of WiFi setup](https://i.ibb.co/0Vz9tmC/Screenshot-20200902-132443.png = 250x)
+  <img src="https://i.ibb.co/0Vz9tmC/Screenshot-20200902-132443.png" alt="image4" width="200"/>
 
-**On succesful setup ull see this**
+  **On succesful setup ull see this**
 
-![Image of Success](https://i.ibb.co/K94yC1R/Screenshot-20210111-110541.png = 250x)
+  <img src="https://i.ibb.co/K94yC1R/Screenshot-20210111-110541.png" alt="image5" width="200"/>
