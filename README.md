@@ -56,20 +56,20 @@ Device will check if it has valid wifi credentials and will try to connect to a 
 
 *Using a smartphone is recommended*
 
-![Image of Connect to SoftAP](https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png)
+![Image of Connect to SoftAP](https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png = 250x)
 
 3. Using any HTTP 1.1 compatible browser navigate to **192.168.1.4**
 
-![Image of goto 192.169.4.1](https://i.ibb.co/KNKmjpL/Screenshot-20210111-111307.png)
+![Image of goto 192.169.4.1](https://i.ibb.co/KNKmjpL/Screenshot-20210111-111307.png = 250x)
 
 4. Select Wi-Fi settings
 
-![Image of Click WiFi Settings](https://i.ibb.co/4Wf7frx/Screenshot-20210111-110445.png)
+![Image of Click WiFi Settings](https://i.ibb.co/4Wf7frx/Screenshot-20210111-110445.png = 250x)
 
 5. Setup Wi-Fi crerdentials and submit
 
-![Image of WiFi setup](https://i.ibb.co/0Vz9tmC/Screenshot-20200902-132443.png)
+![Image of WiFi setup](https://i.ibb.co/0Vz9tmC/Screenshot-20200902-132443.png = 250x)
 
 **On succesful setup ull see this**
 
-![Image of Success](https://i.ibb.co/K94yC1R/Screenshot-20210111-110541.png)
+![Image of Success](https://i.ibb.co/K94yC1R/Screenshot-20210111-110541.png = 250x)
