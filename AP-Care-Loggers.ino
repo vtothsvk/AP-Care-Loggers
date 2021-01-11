@@ -12,11 +12,19 @@
 #include "newAuth.h"
 #include "time.h"
 
+/** Version selection
+ *
+ *  @note select only one
+ */
 #define _HALLWAY
 //#define _DOOR
 //#define _BED
 //#define _KITCHEN
 
+/** PIR sensor selection
+ *
+ *  @note if the HAT version of the sensor is used, uncomment the directive, leave commented otherwise
+ */
 //#define _PIR_HAT
 
 #ifdef _HALLWAY
