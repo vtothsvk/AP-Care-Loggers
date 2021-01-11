@@ -38,9 +38,15 @@ Latest version of the AP-Nurse Care features **over the air firmware update**
 
 **Before OTA FW update, device need to be provisioned and connected to a WiFi network!**
 
-1. Connect your computer to the same network as the target device, or the othe way around
+### 1. Connect your computer to the same network as the target device, or the othe way around
 
-2. 
+### 2. Open Arduino IDE
+
+### 3. Select Port
+
+In Tools>Port u should see an available Network port that represents your connected device
+
+<img src="https://i.ibb.co/jhwSCXX/network-port.png" alt="image0" width="500"/>
 
 # WiFi provisioning
 
