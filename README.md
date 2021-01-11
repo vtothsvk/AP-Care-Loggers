@@ -46,8 +46,6 @@ Latest version of the AP-Nurse Care features **over the air firmware update**
 
 In Tools>Port u should see an available Network port that represents your connected device
 
-![Image of Network port](https://i.ibb.co/jhwSCXX/network-port.png)
-
 <img src="https://i.ibb.co/jhwSCXX/network-port.png" alt="image0" width="650"/>
 
 # WiFi provisioning
