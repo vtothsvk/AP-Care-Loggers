@@ -66,7 +66,7 @@ To connect your device to a WiFi network:
 
   <img src="https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png" alt="image1" width="200"/>
 
-### 3. Using any HTTP 1.1 compatible browser navigate to *192.168.1.4*
+### 3. Using any HTTP 1.1 compatible browser navigate to *192.168.4.1*
 
   <img src="https://i.ibb.co/KNKmjpL/Screenshot-20210111-111307.png" alt="image2" width="200"/>
 
