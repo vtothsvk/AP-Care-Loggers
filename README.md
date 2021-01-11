@@ -56,7 +56,7 @@ Device will check if it has valid wifi credentials and will try to connect to a 
 
 *Using a smartphone is recommended*
 
-![Image of Connect to SoftAP](https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png = 250x)
+<img src="https://i.ibb.co/tM8M8v1/Screenshot-20210111-110427.png" alt="image1" width="200"/>
 
 3. Using any HTTP 1.1 compatible browser navigate to **192.168.1.4**
 
