@@ -48,7 +48,7 @@ In Tools>Port u should see an available Network port that represents your connec
 
 ![Image of Network port](https://i.ibb.co/jhwSCXX/network-port.png)
 
-<img src="https://i.ibb.co/jhwSCXX/network-port.png" alt="image0" width="800"/>
+<img src="https://i.ibb.co/jhwSCXX/network-port.png" alt="image0" width="650"/>
 
 # WiFi provisioning
 
