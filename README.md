@@ -7,13 +7,25 @@
 Version selection is handled by the following directives:
 
 ```C++
+/** Version selection
+ *
+ *  @note select only one
+ */
 #define _HALLWAY
 //#define _DOOR
 //#define _BED
 //#define _KITCHEN
 ```
 
+In case the HAT version of the PIR sensor is used (the one on top of the device) note the following directive
 
+```
+/** PIR sensor selection
+ *
+ *  @note if the HAT version of the sensor is used, uncomment the directive, leave commented otherwise
+ */
+//#define _PIR_HAT
+```
 
 ## FTDI
 
