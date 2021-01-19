@@ -1,0 +1,1420 @@
+[
+    {
+        "id": "52f20fe3.7fd5d",
+        "type": "tab",
+        "label": "Main.js",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "8b960649.22a128",
+        "type": "http in",
+        "z": "52f20fe3.7fd5d",
+        "name": "in",
+        "url": "/careTest",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 90,
+        "y": 320,
+        "wires": [
+            [
+                "4d3f54a4.45948c",
+                "9ed8d8d6.656618",
+                "b99d1050.fee13"
+            ]
+        ]
+    },
+    {
+        "id": "4d3f54a4.45948c",
+        "type": "http response",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 240,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "9ed8d8d6.656618",
+        "type": "debug",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 230,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "3e149cc4.b9ac54",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "559ac979.495d78",
+        "order": 3,
+        "width": "10",
+        "height": "6",
+        "label": "Temperature (°C)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1090,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b99d1050.fee13",
+        "type": "switch",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "property": "payload.Name",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "DOOR",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "HALLWAY",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "BED",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "KITCHEN",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 410,
+        "y": 320,
+        "wires": [
+            [
+                "f18dc76d.3e7478",
+                "c3831bb3.c2d588"
+            ],
+            [
+                "94ce5ca0.1b10e",
+                "4ec92e83.7358f"
+            ],
+            [
+                "9f445f74.2c7e5",
+                "54891454.ce3a6c"
+            ],
+            [
+                "5e898d2f.db78d4",
+                "5b212c03.2ace44"
+            ]
+        ]
+    },
+    {
+        "id": "f18dc76d.3e7478",
+        "type": "function",
+        "z": "52f20fe3.7fd5d",
+        "name": "DOOR",
+        "func": "return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 650,
+        "y": 80,
+        "wires": [
+            [
+                "f0517c9f.121e4",
+                "2f5a5e88.963a22"
+            ]
+        ]
+    },
+    {
+        "id": "f0517c9f.121e4",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Motion",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Motion",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 40,
+        "wires": [
+            [
+                "3cd0f8d8.b57ab8"
+            ]
+        ]
+    },
+    {
+        "id": "2f5a5e88.963a22",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Battery",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Battery",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 80,
+        "wires": [
+            [
+                "59ccfbb9.0916e4"
+            ]
+        ]
+    },
+    {
+        "id": "94ce5ca0.1b10e",
+        "type": "function",
+        "z": "52f20fe3.7fd5d",
+        "name": "HALLWAY",
+        "func": "return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 670,
+        "y": 180,
+        "wires": [
+            [
+                "dfa9dd44.d5012",
+                "47f1b219.e43acc"
+            ]
+        ]
+    },
+    {
+        "id": "dfa9dd44.d5012",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Motion",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Motion",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 140,
+        "wires": [
+            [
+                "7c2015c0.8f62ec"
+            ]
+        ]
+    },
+    {
+        "id": "47f1b219.e43acc",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Battery",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Battery",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 180,
+        "wires": [
+            [
+                "9b680e8b.a6f5d"
+            ]
+        ]
+    },
+    {
+        "id": "9f445f74.2c7e5",
+        "type": "function",
+        "z": "52f20fe3.7fd5d",
+        "name": "BED",
+        "func": "return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 630,
+        "y": 340,
+        "wires": [
+            [
+                "62490ee.b52dbf",
+                "99b6d200.764c",
+                "15e71337.4f950d",
+                "431aa2ca.abccbc",
+                "871241c4.3e97b",
+                "b7b39c06.8aa9b"
+            ]
+        ]
+    },
+    {
+        "id": "62490ee.b52dbf",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Motion",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Motion",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 240,
+        "wires": [
+            [
+                "5787c515.98f02c"
+            ]
+        ]
+    },
+    {
+        "id": "99b6d200.764c",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Battery",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Battery",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 440,
+        "wires": [
+            [
+                "6828e5ac.405a5c"
+            ]
+        ]
+    },
+    {
+        "id": "15e71337.4f950d",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Pressure",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Pressure",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 280,
+        "wires": [
+            [
+                "8419ffdb.54b7c"
+            ]
+        ]
+    },
+    {
+        "id": "431aa2ca.abccbc",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Temperature",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Temperature",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 850,
+        "y": 320,
+        "wires": [
+            [
+                "3e149cc4.b9ac54"
+            ]
+        ]
+    },
+    {
+        "id": "871241c4.3e97b",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Humidity",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Humidity",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 360,
+        "wires": [
+            [
+                "56d1721f.002c9c"
+            ]
+        ]
+    },
+    {
+        "id": "b7b39c06.8aa9b",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Smoke",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Smoke",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 400,
+        "wires": [
+            [
+                "ebf3d1a2.660ec"
+            ]
+        ]
+    },
+    {
+        "id": "5e898d2f.db78d4",
+        "type": "function",
+        "z": "52f20fe3.7fd5d",
+        "name": "KITCHEN",
+        "func": "return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 660,
+        "y": 600,
+        "wires": [
+            [
+                "955c44fa.c13958",
+                "279769d9.5df416",
+                "533005c4.a3b30c",
+                "a393f5ae.c5b3e8",
+                "87361f2.99605e",
+                "df020ce9.e6987"
+            ]
+        ]
+    },
+    {
+        "id": "955c44fa.c13958",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Motion",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Motion",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 500,
+        "wires": [
+            [
+                "1a92ea3d.d25fe6"
+            ]
+        ]
+    },
+    {
+        "id": "279769d9.5df416",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Battery",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Battery",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 700,
+        "wires": [
+            [
+                "706243ae.748b6c"
+            ]
+        ]
+    },
+    {
+        "id": "533005c4.a3b30c",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Pressure",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Light",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 540,
+        "wires": [
+            [
+                "5b366664.32beb8"
+            ]
+        ]
+    },
+    {
+        "id": "a393f5ae.c5b3e8",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Temperature",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Temperature",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 850,
+        "y": 580,
+        "wires": [
+            [
+                "bc028c02.539b3"
+            ]
+        ]
+    },
+    {
+        "id": "87361f2.99605e",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Humidity",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Humidity",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 620,
+        "wires": [
+            [
+                "610ec5b.83a763c"
+            ]
+        ]
+    },
+    {
+        "id": "df020ce9.e6987",
+        "type": "change",
+        "z": "52f20fe3.7fd5d",
+        "name": "Smoke",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.Smoke",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 660,
+        "wires": [
+            [
+                "e850756b.055308"
+            ]
+        ]
+    },
+    {
+        "id": "3cd0f8d8.b57ab8",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "98551e39.17c2",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Motion (Log)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 40,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "59ccfbb9.0916e4",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "98551e39.17c2",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Battery (V)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7c2015c0.8f62ec",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "7180df94.5bf58",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Motion (Log)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9b680e8b.a6f5d",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "7180df94.5bf58",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Battery (V)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5787c515.98f02c",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "559ac979.495d78",
+        "order": 1,
+        "width": "10",
+        "height": "6",
+        "label": "Motion (Log)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6828e5ac.405a5c",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "559ac979.495d78",
+        "order": 6,
+        "width": "10",
+        "height": "6",
+        "label": "Battery (V)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8419ffdb.54b7c",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "559ac979.495d78",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Pressure (arbitrary)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1090,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "56d1721f.002c9c",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "559ac979.495d78",
+        "order": 4,
+        "width": "10",
+        "height": "6",
+        "label": "Humidity (%)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ebf3d1a2.660ec",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "559ac979.495d78",
+        "order": 5,
+        "width": "10",
+        "height": "6",
+        "label": "Smoke (ppm)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1080,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "bc028c02.539b3",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "257b2603.9ccaba",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Temperature (°C)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1090,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1a92ea3d.d25fe6",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "257b2603.9ccaba",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Motion (Log)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "706243ae.748b6c",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "257b2603.9ccaba",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Battery (V)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 700,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5b366664.32beb8",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "257b2603.9ccaba",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Light (arbitrary)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1080,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "610ec5b.83a763c",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "257b2603.9ccaba",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Humidity (%)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1070,
+        "y": 620,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e850756b.055308",
+        "type": "ui_chart",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "group": "257b2603.9ccaba",
+        "order": 2,
+        "width": "10",
+        "height": "6",
+        "label": "Smoke (ppm)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "12",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 1080,
+        "y": 660,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5b212c03.2ace44",
+        "type": "debug",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 650,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "54891454.ce3a6c",
+        "type": "debug",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 630,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "4ec92e83.7358f",
+        "type": "debug",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 650,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "c3831bb3.c2d588",
+        "type": "debug",
+        "z": "52f20fe3.7fd5d",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 650,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "559ac979.495d78",
+        "type": "ui_group",
+        "name": "Bed",
+        "tab": "da94470c.e3c6c8",
+        "order": 3,
+        "disp": true,
+        "width": "20",
+        "collapse": false
+    },
+    {
+        "id": "98551e39.17c2",
+        "type": "ui_group",
+        "name": "Door",
+        "tab": "da94470c.e3c6c8",
+        "order": 1,
+        "disp": true,
+        "width": "20",
+        "collapse": false
+    },
+    {
+        "id": "7180df94.5bf58",
+        "type": "ui_group",
+        "name": "Hallway",
+        "tab": "da94470c.e3c6c8",
+        "order": 2,
+        "disp": true,
+        "width": "20",
+        "collapse": false
+    },
+    {
+        "id": "257b2603.9ccaba",
+        "type": "ui_group",
+        "name": "Kitchen",
+        "tab": "da94470c.e3c6c8",
+        "order": 4,
+        "disp": true,
+        "width": "20",
+        "collapse": false
+    },
+    {
+        "id": "da94470c.e3c6c8",
+        "type": "ui_tab",
+        "name": "Care senosry test",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]
