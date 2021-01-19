@@ -25,7 +25,7 @@
  *
  *  @note if the HAT version of the sensor is used, uncomment the directive, leave commented otherwise
  */
-//#define _PIR_HAT
+#define _PIR_HAT
 
 #ifdef _HALLWAY
 #ifdef _PIR_HAT
@@ -88,7 +88,7 @@ const int   daylightOffset_sec = 3600;
 //RTC_DATA_ATTR int cFails = 0;
 //RTC_DATA_ATTR long timestamp = 1607962136;
 
-const char* serverName = "https://fei.edu.r-das.sk:51415/api/v1/Auth";
+const char* serverName = "http://192.168.1.105:1880/careTest";
 
 char payload[800];
 long cStart;
@@ -307,19 +307,12 @@ void event(bool pir, float bat){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, pir, myId, (long)epoch, bat, myId);
+    sprintf(&payload[0], "{ \"Name\": \"HALLWAY\", \"Motion\" : %d, \"Battery\": %.2f }", pir, bat);
     Serial.print(payload);
-    char myjwt[400];
-    char hjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt, sizeof(myjwt), &jlen, epoch);
-    strcat(hjwt, myjwt);
-    Serial.printf("auth: %s\r\n", hjwt);
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", hjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -343,19 +336,12 @@ void event(uint16_t dist, float bat){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, motion, myId, (long)epoch, bat, myId);
+    sprintf(&payload[0], "{ \"Name\": \"DOOR\", \"Motion\" : %d, \"Battery\": %.2f }", motion, bat);
     Serial.print(payload);
-    char myjwt[400];
-    char hjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt, sizeof(myjwt), &jlen, epoch);
-    strcat(hjwt, myjwt);
-    Serial.printf("auth: %s\r\n", hjwt);
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", hjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -376,24 +362,18 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Temperature\",\"Value\": %f }, { \"Name\": \"Humidity\",\"Value\": %f }, { \"Name\": \"Smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, myId, (long)epoch, hum, myId, (long)epoch, smoke, myId, (long)epoch, bat, myId);
+    sprintf(&payload[0], "{ \"Name\": \"BED\",\
+    \"Motion\" : %d,\
+    \"Pressure\" : %d, \
+    \"Temperature\" : %.2f,\
+    \"Humidity\" : %.2f,\
+    \"Smoke\" : %.3f,\
+    \"Battery\": %.2f }", motion, fsr, temp, hum, smoke, bat);
     Serial.print(payload);
-    char myjwt[400];
-    char hjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt, sizeof(myjwt), &jlen, epoch);
-    strcat(hjwt, myjwt);
-    Serial.printf("auth: %s\r\n", hjwt);
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", hjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -414,24 +394,18 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Temperature\",\"Value\": %f }, { \"Name\": \"Humidity\",\"Value\": %f }, { \"Name\": \"Smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, myId, (long)epoch, hum, myId, (long)epoch, smoke, myId, (long)epoch, bat, myId);
+     sprintf(&payload[0], "{ \"Name\": \"KITCHEN\",\
+    \"Motion\" : %d,\
+    \"Pressure\" : %d, \
+    \"Temperature\" : %.2f,\
+    \"Humidity\" : %.2f,\
+    \"Smoke\" : %.3f,\
+    \"Battery\": %.2f }", motion, light, temp, hum, smoke, bat);
     Serial.print(payload);
-    char myjwt[400];
-    char hjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt, sizeof(myjwt), &jlen, epoch);
-    strcat(hjwt, myjwt);
-    Serial.printf("auth: %s\r\n", hjwt);
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", hjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
