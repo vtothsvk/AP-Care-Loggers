@@ -271,7 +271,7 @@ void loop(){
   float smoke = bme.readGas();
 
   Serial.printf("Pir: %d\r\nFSR: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, fsr, temp, hum, smoke);
-  event(pir, fsr, temp, hum, smoke);
+  event(pir, fsr, temp, hum, smoke, bat);
   /*
   float dummy = 0;
   Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
@@ -288,7 +288,7 @@ void loop(){
   float smoke = bme.readGas();
 
   Serial.printf("Pir: %d\r\nLight: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, light, temp, hum, smoke);
-  event(pir, light, temp, hum, smoke);
+  event(pir, light, temp, hum, smoke, bat);
   /*
   float dummy = 0;
   Serial.printf("Pir: %d\r\nLight: %d\r\n", pir, light);
