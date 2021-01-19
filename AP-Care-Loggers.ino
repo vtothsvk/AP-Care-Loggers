@@ -23,8 +23,8 @@
  *
  *  @note select only one
  */
-#define _HALLWAY
-//#define _DOOR
+//#define _HALLWAY
+#define _DOOR
 //#define _BED
 //#define _KITCHEN
 
@@ -60,6 +60,8 @@ Adafruit_BME680 bme;
 #include <Adafruit_BME680.h>
 #define PIR_PIN      36
 #define LIGHT_PIN    0
+
+Adafruit_BME680 bme;
 #endif
 
 #define cTime        10000
@@ -87,6 +89,13 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
+
+//const char* ssid = "fei-iot";
+//const char* pass = "F+e-i.feb575";
+
+//RTC_DATA_ATTR int bootCount = 0;
+//RTC_DATA_ATTR int cFails = 0;
+//RTC_DATA_ATTR long timestamp = 1607962136;
 
 const char* serverName = SENSORY_TEST_SERVER_URL;
 
@@ -164,8 +173,8 @@ void setup(){
     pinMode(PIR_PIN, INPUT);
     pinMode(LIGHT_PIN, INPUT);
 
-    Wire.begin();
-    bme.begin();
+    //Wire.begin();
+    //bme.begin();
     #endif
 
     #ifdef _BED
@@ -283,9 +292,13 @@ void loop(){
   bool pir = digitalRead(PIR_PIN);
   uint16_t light = analogRead(LIGHT_PIN);
 
-  float temp = bme.readTemperature();
-  float hum = bme.readHumidity();
-  float smoke = bme.readGas();
+  //float temp = bme.readTemperature();
+  //float hum = bme.readHumidity();
+  //float smoke = bme.readGas();
+
+  float temp = 0;
+  float hum = 0;
+  float smoke = 0;
 
   Serial.printf("Pir: %d\r\nLight: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, light, temp, hum, smoke);
   event(pir, light, temp, hum, smoke, bat);
@@ -368,7 +381,7 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     \"Temperature\" : %.2f,\
     \"Humidity\" : %.2f,\
     \"Smoke\" : %.3f,\
-    \"Battery\": %.2f }", motion, fsr, temp, hum, smoke, bat);
+    \"Battery\": %.2f }", pir, fsr, temp, hum, smoke, bat);
     Serial.print(payload);
 
     http.begin(serverName);
@@ -400,7 +413,7 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     \"Temperature\" : %.2f,\
     \"Humidity\" : %.2f,\
     \"Smoke\" : %.3f,\
-    \"Battery\": %.2f }", motion, light, temp, hum, smoke, bat);
+    \"Battery\": %.2f }", pir, light, temp, hum, smoke, bat);
     Serial.print(payload);
 
     http.begin(serverName);
