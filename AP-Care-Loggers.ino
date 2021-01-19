@@ -12,6 +12,13 @@
 #include "newAuth.h"
 #include "time.h"
 
+/** Sensory test server URL
+ * 
+ *  @note update the server IP according to your sensory test server
+ *        e.g.: server IP: 192.168.1.105 -> server URL: http://192.168.1.105:1880/careTest
+ */
+#define SENSORY_TEST_SERVER_URL   "http://192.168.1.105:1880/careTest"
+
 /** Version selection
  *
  *  @note select only one
@@ -81,14 +88,7 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
 
-//const char* ssid = "fei-iot";
-//const char* pass = "F+e-i.feb575";
-
-//RTC_DATA_ATTR int bootCount = 0;
-//RTC_DATA_ATTR int cFails = 0;
-//RTC_DATA_ATTR long timestamp = 1607962136;
-
-const char* serverName = "http://192.168.1.105:1880/careTest";
+const char* serverName = SENSORY_TEST_SERVER_URL;
 
 char payload[800];
 long cStart;
