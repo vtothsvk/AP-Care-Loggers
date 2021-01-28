@@ -20,6 +20,7 @@
 //#define _DOOR
 //#define _BED
 //#define _KITCHEN
+//#define _ALT_BED
 
 /** PIR sensor selection
  *
@@ -50,7 +51,7 @@ VL53L0X tof;
 #ifdef _BED
 #include <Adafruit_BME680.h>
 #define PIR_PIN      33
-#define FSR_PIN      32
+#define FSR_PIN      36
 
 #ifdef _HAS_BME
 Adafruit_BME680 bme;
@@ -58,12 +59,19 @@ Adafruit_BME680 bme;
 #endif
 
 #ifdef _KITCHEN
+#include <Adafruit_BME680.h>
 #define PIR_PIN      36
 #define LIGHT_PIN    0
 
 #ifdef _HAS_BME
 Adafruit_BME680 bme;
 #endif
+#endif
+
+#ifdef _ALT_BED
+#define PIR_PIN      26
+#define FSR_PIN      36
+#define LIGHT_PIN    33
 #endif
 
 #define cTime        10000
