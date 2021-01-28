@@ -27,6 +27,12 @@
  */
 //#define _PIR_HAT
 
+/** BME680 available directive
+ * 
+ *  @note if BME680 sensor is connected, uncomment the directive, leave commented otherwise 
+ */
+//#define _HAS_BME
+
 #ifdef _HALLWAY
 #ifdef _PIR_HAT
 #define PIR_PIN      36
@@ -46,13 +52,18 @@ VL53L0X tof;
 #define PIR_PIN      33
 #define FSR_PIN      32
 
+#ifdef _HAS_BME
 Adafruit_BME680 bme;
+#endif
 #endif
 
 #ifdef _KITCHEN
-#include <Adafruit_BME680.h>
 #define PIR_PIN      36
 #define LIGHT_PIN    0
+
+#ifdef _HAS_BME
+Adafruit_BME680 bme;
+#endif
 #endif
 
 #define cTime        10000
@@ -156,20 +167,24 @@ void setup(){
     pinMode(FSR_PIN, INPUT);
     pinMode(PIR_PIN, INPUT);
 
-    Wire.begin();
+    #ifdef _HAS_BME
+    Wire.begin(32, 33);
     bme.begin();
+    #endif
     #endif
 
     #ifdef _KITCHEN
     pinMode(PIR_PIN, INPUT);
     pinMode(LIGHT_PIN, INPUT);
 
-    Wire.begin();
+    #ifdef _HAS_BME
+    Wire.begin(32, 33);
     bme.begin();
     #endif
+    #endif
 
-    #ifdef _BED
-    Wire.begin(32, 33);
+    #ifdef _HALLWAY
+    pinMode(PIR_PIN, INPUT);
     #endif
     /*
     WiFi.begin(ssid, pass);
@@ -236,10 +251,6 @@ void setup(){
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-
-   #ifdef _HALLWAY
-   pinMode(PIR_PIN, INPUT);
-   #endif
 }//setup
 
 void loop(){
@@ -266,9 +277,15 @@ void loop(){
   bool pir = digitalRead(PIR_PIN);
   uint16_t fsr = analogRead(FSR_PIN);
 
+  #ifdef _HAS_BME
   float temp = bme.readTemperature();
   float hum = bme.readHumidity();
   float smoke = bme.readGas();
+  #else
+  float temp = 0.0;
+  float hum = 0.0;
+  float smoke = 0.0;
+  #endif
 
   Serial.printf("Pir: %d\r\nFSR: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, fsr, temp, hum, smoke);
   event(pir, fsr, temp, hum, smoke, bat);
@@ -283,9 +300,15 @@ void loop(){
   bool pir = digitalRead(PIR_PIN);
   uint16_t light = analogRead(LIGHT_PIN);
 
+  #ifdef _HAS_BME
   float temp = bme.readTemperature();
   float hum = bme.readHumidity();
   float smoke = bme.readGas();
+  #else
+  float temp = 0.0;
+  float hum = 0.0;
+  float smoke = 0.0;
+  #endif
 
   Serial.printf("Pir: %d\r\nLight: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, light, temp, hum, smoke);
   event(pir, light, temp, hum, smoke, bat);
@@ -307,7 +330,7 @@ void event(bool pir, float bat){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, pir, myId, (long)epoch, bat, myId);
+    sprintf(&payload[0], "[ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, pir, myId, (long)epoch, bat, myId);
     Serial.print(payload);
     char myjwt[400];
     char hjwt[410] = "Bearer ";
@@ -343,7 +366,7 @@ void event(uint16_t dist, float bat){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, motion, myId, (long)epoch, bat, myId);
+    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, motion, myId, (long)epoch, bat, myId);
     Serial.print(payload);
     char myjwt[400];
     char hjwt[410] = "Bearer ";
@@ -377,11 +400,11 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Temperature\",\"Value\": %f }, { \"Name\": \"Humidity\",\"Value\": %f }, { \"Name\": \"Smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, myId, (long)epoch, hum, myId, (long)epoch, smoke, myId, (long)epoch, bat, myId);
+    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
+    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
     Serial.print(payload);
     char myjwt[400];
     char hjwt[410] = "Bearer ";
@@ -415,11 +438,11 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Temperature\",\"Value\": %f }, { \"Name\": \"Humidity\",\"Value\": %f }, { \"Name\": \"Smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"Voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, myId, (long)epoch, hum, myId, (long)epoch, smoke, myId, (long)epoch, bat, myId);
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
+    (long)epoch, pir, myId, (long)epoch, light, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
     Serial.print(payload);
     char myjwt[400];
     char hjwt[410] = "Bearer ";
@@ -577,7 +600,7 @@ void setupMode() {
   }
   delay(100);
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(apSSID);
+  WiFi.softAP(SN);
   WiFi.mode(WIFI_MODE_AP);
   // WiFi.softAPConfig(IPAddress local_ip, IPAddress gateway, IPAddress subnet);
   // WiFi.softAP(const char* ssid, const char* passphrase = NULL, int channel = 1, int ssid_hidden = 0);
@@ -585,7 +608,7 @@ void setupMode() {
   startWebServer();
   Serial.print("Starting Access Point at \"");
   //M5.Lcd.print("Starting Access Point at \"");
-  Serial.print(apSSID);
+  Serial.print(SN);
   //M5.Lcd.print(apSSID);
   Serial.println("\"");
   //M5.Lcd.println("\"");
