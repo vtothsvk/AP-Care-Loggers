@@ -1,4 +1,4 @@
-#include <M5StickC.h>
+#include <M5StickCPlus.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <ESPmDNS.h>
@@ -69,8 +69,8 @@ Adafruit_BME680 bme;
 #endif
 
 #ifdef _ALT_BED
-#define PIR_PIN      26
-#define FSR_PIN      36
+#define PIR_PIN      36
+#define FSR_PIN      26
 #define LIGHT_PIN    33
 #endif
 
@@ -96,6 +96,10 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
 void event(bool pir, uint16_t light, float temp, float hum, float smoke, float bat);
 #endif
 
+#ifdef _ALT_BED
+void event(bool pir, uint16_t fsr, uint16_t light, float bat);
+#endif
+
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
@@ -115,7 +119,7 @@ long cStart;
 authHandler auth;
 
 const IPAddress apIP(192, 168, 4, 1);
-const char* apSSID = "nice-AP";
+char apSSID[13] = "nice-AP-1-";
 boolean settingMode;
 String ssidList;
 String wifi_ssid;
@@ -153,11 +157,13 @@ void wifiConfig(){
 
 void setup(){
     M5.begin();
-    M5.Axp.ScreenBreath(0);
+    //M5.Axp.ScreenBreath(0);
     //Wire.begin();
     //Serial init
     Serial.begin(115200);
     //Wire.begin(0, 26);
+    apSSID[10] = SN[14];
+    apSSID[11] = SN[15];
 
     #ifdef _DOOR
     Wire.begin();
@@ -193,6 +199,12 @@ void setup(){
 
     #ifdef _HALLWAY
     pinMode(PIR_PIN, INPUT);
+    #endif
+
+    #ifdef _ALT_BED
+    pinMode(FSR_PIN, INPUT);
+    pinMode(PIR_PIN, INPUT);
+    pinMode(LIGHT_PIN, INPUT);
     #endif
     /*
     WiFi.begin(ssid, pass);
@@ -324,6 +336,20 @@ void loop(){
   float dummy = 0;
   Serial.printf("Pir: %d\r\nLight: %d\r\n", pir, light);
   event(pir, light, dummy, dummy,)
+  */
+  #endif
+
+  #ifdef _ALT_BED
+  bool pir = digitalRead(PIR_PIN);
+  uint16_t fsr = analogRead(FSR_PIN);
+  uint16_t light = analogRead(LIGHT_PIN);
+
+  Serial.printf("Pir: %d\r\nFSR: %d\r\nLight: %d\r\n", pir, fsr, light);
+  event(pir, fsr, light, bat);
+  /*
+  float dummy = 0;
+  Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
+  event(pir, fsr, dummy, dummy,)
   */
   #endif
   M5.update();
@@ -477,6 +503,44 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
 }
 #endif
 
+#ifdef _ALT_BED
+void event(bool pir, uint16_t fsr, uint16_t light, float bat){
+    struct tm mytime;
+    getLocalTime(&mytime);
+    time_t epoch = mktime(&mytime);
+    Serial.printf("Timestamp: %ld", (long)epoch);
+    sprintf(&payload[0], "\
+    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
+    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, light, myId, (long)epoch, bat, myId);
+    Serial.print(payload);
+    char myjwt[400];
+    char hjwt[410] = "Bearer ";
+    size_t jlen;
+    auth.createJWT((uint8_t*)myjwt, sizeof(myjwt), &jlen, epoch);
+    strcat(hjwt, myjwt);
+    Serial.printf("auth: %s\r\n", hjwt);
+
+    http.begin(serverName);
+
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", hjwt);
+
+    int ret = http.POST(payload);
+    //kontrola responsu
+    if(ret != 200){
+      Serial.printf("ret: %d", ret);
+    } else {
+      Serial.println("OK");
+    }
+
+    //koniec
+    http.end();
+}
+#endif
+
 boolean restoreConfig() {
   wifi_ssid = preferences.getString("WIFI_SSID");
   wifi_password = preferences.getString("WIFI_PASSWD");
@@ -500,13 +564,13 @@ boolean restoreConfig() {
 boolean checkConnection() {
   int count = 0;
   Serial.print("Waiting for Wi-Fi connection");
-  //M5.Lcd.print("Waiting for Wi-Fi connection");
+  M5.Lcd.println("Waiting for Wi-Fi connection");
   while ( count < 30 ) {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println();
       //M5.Lcd.println();
       Serial.println("Connected!");
-      //M5.Lcd.println("Connected!");
+      M5.Lcd.println("Connected!");
       needConnect = false;
       return (true);
     }
@@ -608,7 +672,7 @@ void setupMode() {
   }
   delay(100);
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(SN);
+  WiFi.softAP(apSSID);
   WiFi.mode(WIFI_MODE_AP);
   // WiFi.softAPConfig(IPAddress local_ip, IPAddress gateway, IPAddress subnet);
   // WiFi.softAP(const char* ssid, const char* passphrase = NULL, int channel = 1, int ssid_hidden = 0);
@@ -616,10 +680,11 @@ void setupMode() {
   startWebServer();
   Serial.print("Starting Access Point at \"");
   //M5.Lcd.print("Starting Access Point at \"");
-  Serial.print(SN);
+  Serial.print(apSSID);
   //M5.Lcd.print(apSSID);
   Serial.println("\"");
   //M5.Lcd.println("\"");
+  M5.Lcd.println("No WiFi Connection!");
 }
 
 String makePage(String title, String contents) {
