@@ -60,7 +60,7 @@ To connect your device to a WiFi network:
 
   Device will check if it has valid wifi credentials and will try to connect to a network, on connection fail the device creates an acces point with the **nice-AP** SSID, where it will start a web serverwaiting for wifi credentials provisioning
 
-### 2. Connect to the nice-AP AP
+### 2. Connect to the nice-AP X-XX AP
 
   *Using a smartphone is recommended*
 
