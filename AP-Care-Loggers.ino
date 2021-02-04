@@ -469,7 +469,7 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     Serial.printf("Timestamp: %ld", (long)epoch);
     sprintf(&payload[0], "\
     [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Photo2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
     (long)epoch, pir, myId, (long)epoch, light, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
