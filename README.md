@@ -48,7 +48,7 @@ In Tools>Port u should see an available Network port that represents your connec
 
 <img src="https://i.ibb.co/jhwSCXX/network-port.png" alt="image0" width="650"/>
 
-** Now u can build and flash the app the same way as using FTDI **
+**Now u can build and flash the app the same way as using FTDI**
 
 # WiFi provisioning
 
