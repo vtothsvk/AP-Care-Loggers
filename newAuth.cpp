@@ -34,7 +34,7 @@ int authHandler::sign(const uint8_t *digest, size_t digestLen, uint8_t *signatur
     //create and init pkey context
     mbedtls_pk_context pk;
     mbedtls_pk_init(&pk);
-        
+    
     //parse rpivate key
     ret = mbedtls_pk_parse_key(&pk, (unsigned char*)PRIVATE_KEY, strlen(PRIVATE_KEY) + 1, NULL, 0);
     if (ret) return ret;
