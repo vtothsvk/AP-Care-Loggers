@@ -16,9 +16,9 @@
  *
  *  @note select only one
  */
-#define _HALLWAY
+//#define _HALLWAY
 //#define _DOOR
-//#define _BED
+#define _BED
 //#define _KITCHEN
 //#define _ALT_BED
 
@@ -33,6 +33,8 @@
  *  @note if BME680 sensor is connected, uncomment the directive, leave commented otherwise 
  */
 #define _HAS_BME
+
+//#define _HALLWAY_SLEEP
 
 #ifdef _HALLWAY
 #ifdef _PIR_HAT
@@ -63,7 +65,7 @@ Adafruit_BME680 bme;
 //#include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
 #define PIR_PIN      36
-#define LIGHT_PIN    33
+#define LIGHT_PIN    0
 
 #ifdef _HAS_BME
 Adafruit_BME680 bme;
@@ -279,12 +281,6 @@ void setup(){
 
 void loop(){
   float bat = M5.Axp.GetBatVoltage();
-
-  if (M5.BtnA.wasPressed()) {
-    Serial.println("Blink Motherfucker!");
-    OTAhandler();
-  }
-
   #ifdef _HALLWAY
   bool pir = digitalRead(PIR_PIN);
   Serial.printf("Pir: %d\r\nBat: %.2f\r\n", pir, bat);
@@ -322,7 +318,7 @@ void loop(){
 
   #ifdef _KITCHEN
   bool pir = digitalRead(PIR_PIN);
-  uint16_t light = analogRead(LIGHT_PIN);
+  uint16_t light = 4096 - analogRead(LIGHT_PIN);
 
   #ifdef _HAS_BME
   float temp = bme.readTemperature();
@@ -357,6 +353,18 @@ void loop(){
   */
   #endif
   M5.update();
+
+  if (M5.BtnA.wasPressed()) {
+    Serial.println("Blink Motherfucker!");
+    OTAhandler();
+  }
+
+  #ifdef _HALLWAY_SLEEP
+  esp_sleep_enable_ext1_wakeup(PIN_NUM_TO_MASK(PIR_PIN), ESP_EXT1_WAKEUP_ANY_HIGH);
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  M5.Axp.ScreenBreath(0);
+  esp_deep_sleep_start();
+  #endif
   delay(1000);
 }//loop
 
