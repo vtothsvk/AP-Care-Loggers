@@ -26,7 +26,7 @@
  *
  *  @note if the HAT version of the sensor is used, uncomment the directive, leave commented otherwise
  */
-//#define _PIR_HAT
+#define _PIR_HAT
 
 /** BME680 available directive
  * 
@@ -51,8 +51,8 @@ VL53L0X tof;
 #ifdef _BED
 //#include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
-#define PIR_PIN      26
-#define FSR_PIN      36
+#define PIR_PIN      36
+#define FSR_PIN      0
 
 #ifdef _HAS_BME
 Adafruit_BME680 bme;
@@ -63,7 +63,7 @@ Adafruit_BME680 bme;
 //#include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
 #define PIR_PIN      36
-#define LIGHT_PIN    0
+#define LIGHT_PIN    33
 
 #ifdef _HAS_BME
 Adafruit_BME680 bme;
@@ -81,6 +81,8 @@ Adafruit_BME680 bme;
 
 #define uS_TO_S_FACTOR 1000000
 #define TIME_TO_SLEEP  60
+
+#define PIN_NUM_TO_MASK(PIN_NUM) ((uint64_t)((1 << (PIN_NUM - 31))) << 31)
 
 #ifdef _HALLWAY
 void event(bool pir, float bat);
@@ -194,7 +196,7 @@ void setup(){
     pinMode(LIGHT_PIN, INPUT);
 
     #ifdef _HAS_BME
-    Wire.begin(32, 33);
+    Wire.begin(21, 22);
     bme.begin();
     #endif
     #endif
@@ -468,11 +470,9 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Photo2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    [ { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, light, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
+    (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -504,9 +504,9 @@ void event(bool pir, uint16_t fsr, uint16_t light, float bat){
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    [ { \"LoggerName\": \"PIR2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
     (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, light, myId, (long)epoch, bat, myId);
     Serial.print(payload);
