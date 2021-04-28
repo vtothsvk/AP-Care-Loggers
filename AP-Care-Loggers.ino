@@ -49,12 +49,15 @@
 
 #ifdef _DOOR
 #include <VL53L0X.h>
-
 VL53L0X tof;
+RTC_DATA_ATTR bool mHold = false;
 RTC_DATA_ATTR bool wasMotion = false;
 RTC_DATA_ATTR long motionTime = 0;
+RTC_DATA_ATTR bool stuckMute = false;
+RTC_DATA_ATTR long stuckMuteTime = 0;
 
 #define STUCK_TIME 600000//ms
+#define STUCK_MUTE 20000//ms
 #endif
 
 #ifdef _BED
@@ -120,13 +123,6 @@ void event(int8_t rssi);
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
-
-//const char* ssid = "fei-iot";
-//const char* pass = "F+e-i.feb575";
-
-//RTC_DATA_ATTR int bootCount = 0;
-//RTC_DATA_ATTR int cFails = 0;
-//RTC_DATA_ATTR long timestamp = 1607962136;
 
 const char* serverName = "https://fei.edu.r-das.sk:51414/api/v1/Auth";
 
@@ -313,7 +309,8 @@ void loop(){
   #endif
 
   #ifdef _DOOR
-  uint16_t dist = tof.readRangeContinuousMillimeters();
+  //uint16_t dist = tof.readRangeContinuousMillimeters();
+  uint16_t dist = 3000;
   Serial.printf("dist: %d\r\nBat: %.2f\r\n", dist, bat);
   event(dist, bat);
   #endif
@@ -445,23 +442,37 @@ void event(bool pir, float bat){
 
 #ifdef _DOOR
 void event(uint16_t dist, float bat){
-    //sprintf(&payload[0], "{ \"T\": %.1f, \"H\": %.1f }", t, h);
-    //timestamp += (long)(millis() / 1000) + 60;
     bool motion = (dist < 8000) ? true : false;
     bool stuck = false;
 
-    if (motion) {
-      if (wasMotion && ((motionTime - millis()) >= STUCK_TIME)) {
+    if (!mHold) {
+      if (stuckMute) {
+        if ((millis() - stuckMuteTime) >= STUCK_MUTE) {
+          stuckMute = false;
+        }
+      }
+
+      if (motion && (!stuckMute)) {
+        if (!wasMotion) {
+          wasMotion = true;
+          motionTime = millis();
+          Serial.println("mot");
+        }else{
+          wasMotion = false;
+          stuckMute = true;
+          stuckMuteTime = millis();
+        }
+      }
+
+      if (wasMotion && ((millis() - motionTime) >= STUCK_TIME)) {
         stuck = true;
         wasMotion = false;
-      } else {
-        wasMotion = true
-        motionTime = millis()
       }
-    } else {
-      wasMotion = false;
-      motionTime = millis()
     }
+
+    mHold = motion;
+
+    Serial.printf("m %d, was: %d, mt %ld, t %ld", motion, wasMotion, motionTime, millis());
 
     struct tm mytime;
     getLocalTime(&mytime);
@@ -470,7 +481,7 @@ void event(uint16_t dist, float bat){
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
     sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }, { \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, motion, stuck, myId, (long)epoch, bat, , stats.rssi, myId);
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, motion, stuck, myId, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer "; 
     size_t jlen;
