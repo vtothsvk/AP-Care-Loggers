@@ -17,8 +17,8 @@
  *  @note select only one
  */
 //#define _BED//AP1-M
-//#define _HALLWAY//AP4-M
-#define _DOOR //AP2-M
+#define _HALLWAY//AP4-M
+//#define _DOOR //AP2-M
 //#define _KITCHEN//AP6-M
 //#define _ALT_BED
 //#define akafuka
@@ -55,6 +55,8 @@ RTC_DATA_ATTR bool wasMotion = false;
 RTC_DATA_ATTR long motionTime = 0;
 RTC_DATA_ATTR bool stuckMute = false;
 RTC_DATA_ATTR long stuckMuteTime = 0;
+
+uint16_t calDist = 0;
 
 #define STUCK_TIME 600000//ms
 #define STUCK_MUTE 20000//ms
@@ -228,6 +230,8 @@ void setup(){
         while (1) {}
     }
     tof.startContinuous(100);
+
+    calDist = tof.readRangeContinuousMillimeters();
     #endif
 
     #ifdef _BED
@@ -309,8 +313,7 @@ void loop(){
   #endif
 
   #ifdef _DOOR
-  //uint16_t dist = tof.readRangeContinuousMillimeters();
-  uint16_t dist = 3000;
+  uint16_t dist = tof.readRangeContinuousMillimeters();
   Serial.printf("dist: %d\r\nBat: %.2f\r\n", dist, bat);
   event(dist, bat);
   #endif
@@ -442,7 +445,7 @@ void event(bool pir, float bat){
 
 #ifdef _DOOR
 void event(uint16_t dist, float bat){
-    bool motion = (dist < 8000) ? true : false;
+    bool motion = (dist < calDist) ? true : false;
     bool stuck = false;
 
     if (!mHold) {
@@ -676,7 +679,7 @@ boolean checkConnection() {
   int count = 0;
   Serial.print("Waiting for Wi-Fi connection");
   M5.Lcd.println("Waiting for Wi-Fi connection");
-  while ( count < 30 ) {
+  while ( count < 120 ) {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println();
       //M5.Lcd.println();
@@ -755,8 +758,8 @@ void startWebServer() {
     });
     webServer.on("/reset", []() {
       // reset the wifi config
-      preferences.remove("WIFI_SSID");
-      preferences.remove("WIFI_PASSWD");
+      //preferences.remove("WIFI_SSID");
+      //preferences.remove("WIFI_PASSWD");
       String s = "<h1>Wi-Fi settings was reset.</h1><p>Please reset device.</p>";
       webServer.send(200, "text/html", makePage("Reset Wi-Fi Settings", s));
       delay(3000);
