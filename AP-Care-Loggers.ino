@@ -5,22 +5,23 @@
 #include <WiFiClient.h>
 #include "WebServer.h"
 #include <Preferences.h>
-//#include "DHT12.h" 
 #include <Wire.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include "newAuth.h"
 #include "time.h"
+#include "esp_wifi.h"
 
 /** Version selection
  *
  *  @note select only one
  */
-//#define _HALLWAY
-//#define _DOOR
-#define _BED
-//#define _KITCHEN
+//#define _BED//AP1-M
+#define _HALLWAY//AP4-M
+//#define _DOOR //AP2-M
+//#define _KITCHEN//AP6-M
 //#define _ALT_BED
+//#define akafuka
 
 /** PIR sensor selection
  *
@@ -34,7 +35,9 @@
  */
 #define _HAS_BME
 
-//#define _HALLWAY_SLEEP
+#ifdef _HALLWAY
+#define _HALLWAY_SLEEP
+#endif
 
 #ifdef _HALLWAY
 #ifdef _PIR_HAT
@@ -106,6 +109,10 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
 void event(bool pir, uint16_t fsr, uint16_t light, float bat);
 #endif
 
+#ifdef akafuka
+void event(int8_t rssi);
+#endif
+
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
@@ -117,7 +124,7 @@ const int   daylightOffset_sec = 3600;
 //RTC_DATA_ATTR int cFails = 0;
 //RTC_DATA_ATTR long timestamp = 1607962136;
 
-const char* serverName = "https://fei.edu.r-das.sk:51415/api/v1/Auth";
+const char* serverName = "https://fei.edu.r-das.sk:51414/api/v1/Auth";
 
 char payload[1024];
 long cStart;
@@ -125,7 +132,20 @@ long cStart;
 authHandler auth;
 
 const IPAddress apIP(192, 168, 4, 1);
-char apSSID[13] = "nice-AP-1-";
+char apSSID[20] = "niceAP-";
+
+#ifdef _HALLWAY
+char tag[5] = "4-M-";
+#endif
+
+#ifdef _DOOR
+char tag[5] = "2-M-";
+#endif
+
+#ifdef _KITCHEN
+char tag[5] = "6-M-";
+#endif
+
 boolean settingMode;
 String ssidList;
 String wifi_ssid;
@@ -161,15 +181,42 @@ void wifiConfig(){
     }
 }
 
+void forceWifiConfig(){
+  //preferences.begin("wifi-config");
+  delay(10);
+    if (false) {
+        if (checkConnection()) { 
+        settingMode = false;
+        startWebServer();
+        return;
+        }
+    }
+    settingMode = true;
+    setupMode();
+
+    needConnect = true;
+
+    while (needConnect){
+        if (settingMode) {
+        }
+        webServer.handleClient();
+    }
+}
+
 void setup(){
     M5.begin();
+    M5.Axp.SetChargeCurrent(100);
     //M5.Axp.ScreenBreath(0);
     //Wire.begin();
     //Serial init
     Serial.begin(115200);
     //Wire.begin(0, 26);
-    apSSID[10] = SN[14];
-    apSSID[11] = SN[15];
+    sprintf(apSSID + strlen(apSSID), "%s", tag);
+    uint8_t index = strlen(apSSID);
+    apSSID[index++] = SN[8];
+    apSSID[index++] = '-';
+    apSSID[index++] = SN[14];
+    apSSID[index++] = SN[15];
 
     #ifdef _DOOR
     Wire.begin();
@@ -198,7 +245,7 @@ void setup(){
     pinMode(LIGHT_PIN, INPUT);
 
     #ifdef _HAS_BME
-    Wire.begin(21, 22);
+    Wire.begin(32, 33);
     bme.begin();
     #endif
     #endif
@@ -212,36 +259,10 @@ void setup(){
     pinMode(PIR_PIN, INPUT);
     pinMode(LIGHT_PIN, INPUT);
     #endif
-    /*
-    WiFi.begin(ssid, pass);
-    while(WiFi.status() != WL_CONNECTED){
-        Serial.print(".");
-    }
-    Serial.println();
-    */
 
     wifiConfig();
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
-    /*
-    while ((WiFi.status() != WL_CONNECTED)&&((millis() - start) <= cTime)) {
-        delay(100);
-        Serial.print(".");
-    }//while
-    Serial.println();
-    
-    if (WiFi.status() != WL_CONNECTED) {
-        ++cFails;
-        esp_sleep_enable_timer_wakeup(cFails * cSleepTime * uS_TO_S_FACTOR);
-        esp_deep_sleep_start();
-    }//if (WiFi.status() != WL_CONNECTED)
-    */
-
-   /*
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-    esp_deep_sleep_start();
-    */
 
   ArduinoOTA
   .onStart([]() {
@@ -352,11 +373,22 @@ void loop(){
   event(pir, fsr, dummy, dummy,)
   */
   #endif
+
+  #ifdef akafuka
+  wifi_ap_record_t stats;
+  esp_wifi_sta_get_ap_info(&stats);
+  event(stats.rssi);
+  #endif
   M5.update();
 
   if (M5.BtnA.wasPressed()) {
     Serial.println("Blink Motherfucker!");
     OTAhandler();
+  }
+
+  if (M5.BtnB.wasPressed()) {
+    Serial.println("starting force wifi config");
+    forceWifiConfig();
   }
 
   #ifdef _HALLWAY_SLEEP
@@ -372,11 +404,17 @@ void loop(){
 void event(bool pir, float bat){
     //sprintf(&payload[0], "{ \"T\": %.1f, \"H\": %.1f }", t, h);
     //timestamp += (long)(millis() / 1000) + 60;
+    wifi_ap_record_t stats;
+    esp_wifi_sta_get_ap_info(&stats);
+
     struct tm mytime;
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, pir, myId, (long)epoch, bat, myId);
+    
+    sprintf(&payload[0], "[ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, pir, myId, (long)epoch, bat, stats.rssi, myId);
+
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -410,7 +448,10 @@ void event(uint16_t dist, float bat){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", (long)epoch, motion, myId, (long)epoch, bat, myId);
+    wifi_ap_record_t stats;
+    esp_wifi_sta_get_ap_info(&stats);
+    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, motion, myId, (long)epoch, bat, , stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer "; 
     size_t jlen;
@@ -441,12 +482,14 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
+    esp_wifi_sta_get_ap_info(&stats);
+    event(stats.rssi);
     sprintf(&payload[0], "\
     [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", 
+    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -477,10 +520,13 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
+    esp_wifi_sta_get_ap_info(&stats);
+    event(stats.rssi);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, myId);
+    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", 
+    (long)epoch, pir, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -511,14 +557,49 @@ void event(bool pir, uint16_t fsr, uint16_t light, float bat){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
+    wifi_ap_record_t stats;
+    esp_wifi_sta_get_ap_info(&stats);
     sprintf(&payload[0], "\
     [ { \"LoggerName\": \"PIR2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
     { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Battery\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"voltage\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" } ]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, light, myId, (long)epoch, bat, myId);
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", 
+    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, light, myId, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[400] = "Bearer ";
+    size_t jlen;
+    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
+    Serial.printf("auth: %s\r\n", myjwt);
+
+    http.begin(serverName);
+
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", myjwt);
+
+    int ret = http.POST(payload);
+    //kontrola responsu
+    if(ret != 200){
+      Serial.printf("ret: %d", ret);
+    } else {
+      Serial.println("OK");
+    }
+
+    //koniec
+    http.end();
+}
+#endif
+
+#ifdef akafuka
+void event(int8_t rssi){
+    //sprintf(&payload[0], "{ \"T\": %.1f, \"H\": %.1f }", t, h);
+    //timestamp += (long)(millis() / 1000) + 60;
+    struct tm mytime;
+    getLocalTime(&mytime);
+    time_t epoch = mktime(&mytime);
+    Serial.printf("Timestamp: %ld", (long)epoch);
+    sprintf(&payload[0], "[ { \"LoggerName\": \"WiFi\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, rssi, myId);
+    Serial.print(payload);
+    char myjwt[410] = "Bearer ";
     size_t jlen;
     auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
     Serial.printf("auth: %s\r\n", myjwt);
