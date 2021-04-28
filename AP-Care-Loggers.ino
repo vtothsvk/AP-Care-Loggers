@@ -17,8 +17,8 @@
  *  @note select only one
  */
 //#define _BED//AP1-M
-#define _HALLWAY//AP4-M
-//#define _DOOR //AP2-M
+//#define _HALLWAY//AP4-M
+#define _DOOR //AP2-M
 //#define _KITCHEN//AP6-M
 //#define _ALT_BED
 //#define akafuka
@@ -51,6 +51,10 @@
 #include <VL53L0X.h>
 
 VL53L0X tof;
+RTC_DATA_ATTR bool wasMotion = false;
+RTC_DATA_ATTR long motionTime = 0;
+
+#define STUCK_TIME 600000//ms
 #endif
 
 #ifdef _BED
@@ -444,14 +448,29 @@ void event(uint16_t dist, float bat){
     //sprintf(&payload[0], "{ \"T\": %.1f, \"H\": %.1f }", t, h);
     //timestamp += (long)(millis() / 1000) + 60;
     bool motion = (dist < 8000) ? true : false;
+    bool stuck = false;
+
+    if (motion) {
+      if (wasMotion && ((motionTime - millis()) >= STUCK_TIME)) {
+        stuck = true;
+        wasMotion = false;
+      } else {
+        wasMotion = true
+        motionTime = millis()
+      }
+    } else {
+      wasMotion = false;
+      motionTime = millis()
+    }
+
     struct tm mytime;
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, motion, myId, (long)epoch, bat, , stats.rssi, myId);
+    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }, { \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
+    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, motion, stuck, myId, (long)epoch, bat, , stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer "; 
     size_t jlen;
