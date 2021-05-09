@@ -126,7 +126,7 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
 
-const char* serverName = "https://fei.edu.r-das.sk:51414/api/v1/Auth";
+const char* serverName = "http://192.168.2.7:1880/niceBridge";
 
 char payload[1024];
 long cStart;
@@ -184,7 +184,7 @@ void wifiConfig(){
 }
 
 void forceWifiConfig(){
-  //preferences.begin("wifi-config");
+  preferences.begin("wifi-config");
   delay(10);
     if (false) {
         if (checkConnection()) { 
@@ -416,24 +416,31 @@ void event(bool pir, float bat){
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     
-    sprintf(&payload[0], "[ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, pir, myId, (long)epoch, bat, stats.rssi, myId);
+    sprintf(&payload[0], "{\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"plen\": 2 }", SN, kid, (long)epoch, bat, stats.rssi, (long)epoch, pir, myId);
 
-    Serial.print(payload);
+    /*Serial.println(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
     auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
-    Serial.printf("auth: %s\r\n", myjwt);
+    Serial.printf("auth: %s\r\n", myjwt);*/
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", myjwt);
+    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
     if(ret != 200){
-      Serial.printf("ret: %d", ret);
+      Serial.printf("ret: %d\r\n", ret);
     } else {
       Serial.println("OK");
     }
@@ -483,8 +490,15 @@ void event(uint16_t dist, float bat){
     Serial.printf("Timestamp: %ld", (long)epoch);
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }, { \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, motion, stuck, myId, (long)epoch, bat, stats.rssi, myId);
+    sprintf(&payload[0], "{\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }, { \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"plen\": 2 }", SN, kid, (long)epoch, motion, stuck, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer "; 
     size_t jlen;
@@ -494,7 +508,7 @@ void event(uint16_t dist, float bat){
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", myjwt);
+    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -518,11 +532,18 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, stats.rssi, myId);
+    {\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"plen\": 4 }", SN, kid, 
+    (long)epoch, pir, (long)epoch, fsr, (long)epoch, temp, hum, smoke, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -532,7 +553,7 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", myjwt);
+    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -556,10 +577,17 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", 
-    (long)epoch, pir, myId, (long)epoch, temp, hum, smoke, myId, (long)epoch, bat, stats.rssi, myId);
+    {\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"plen\": 2 }", SN, kid, 
+    (long)epoch, pir, (long)epoch, temp, hum, smoke, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -569,7 +597,7 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", myjwt);
+    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -593,11 +621,17 @@ void event(bool pir, uint16_t fsr, uint16_t light, float bat){
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
     sprintf(&payload[0], "\
-    [ { \"LoggerName\": \"PIR2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }, \
-    { \"LoggerName\": \"System\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"battery\",\"Value\": %f }, { \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", 
-    (long)epoch, pir, myId, (long)epoch, fsr, myId, (long)epoch, light, myId, (long)epoch, bat, stats.rssi, myId);
+    {\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"PIR2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\"\
+    \"offlineId\": \"%s\"}", SN, kid, 
+    (long)epoch, pir, (long)epoch, fsr, (long)epoch, light, (long)epoch, bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[400] = "Bearer ";
     size_t jlen;
@@ -607,7 +641,7 @@ void event(bool pir, uint16_t fsr, uint16_t light, float bat){
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", myjwt);
+    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -630,7 +664,13 @@ void event(int8_t rssi){
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "[ { \"LoggerName\": \"WiFi\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": [], \"DeviceId\": \"%s\" }]", (long)epoch, rssi, myId);
+    sprintf(&payload[0], "{\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"WiFi\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\"\
+    \"offlineId\": \"%s\"}", SN, kid, (long)epoch, rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -640,7 +680,7 @@ void event(int8_t rssi){
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", myjwt);
+    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -679,7 +719,7 @@ boolean checkConnection() {
   int count = 0;
   Serial.print("Waiting for Wi-Fi connection");
   M5.Lcd.println("Waiting for Wi-Fi connection");
-  while ( count < 120 ) {
+  while ( count < 50 ) {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println();
       //M5.Lcd.println();
@@ -758,8 +798,8 @@ void startWebServer() {
     });
     webServer.on("/reset", []() {
       // reset the wifi config
-      //preferences.remove("WIFI_SSID");
-      //preferences.remove("WIFI_PASSWD");
+      preferences.remove("WIFI_SSID");
+      preferences.remove("WIFI_PASSWD");
       String s = "<h1>Wi-Fi settings was reset.</h1><p>Please reset device.</p>";
       webServer.send(200, "text/html", makePage("Reset Wi-Fi Settings", s));
       delay(3000);
