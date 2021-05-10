@@ -17,8 +17,8 @@
  *  @note select only one
  */
 //#define _BED//AP1-M
-#define _HALLWAY//AP4-M
-//#define _DOOR //AP2-M
+//#define _HALLWAY//AP4-M
+#define _DOOR //AP2-M
 //#define _KITCHEN//AP6-M
 //#define _ALT_BED
 //#define akafuka
@@ -135,6 +135,10 @@ authHandler auth;
 
 const IPAddress apIP(192, 168, 4, 1);
 char apSSID[20] = "niceAP-";
+
+#ifdef _BED
+char tag[5] = "1-M-"
+#endif
 
 #ifdef _HALLWAY
 char tag[5] = "4-M-";
@@ -452,7 +456,7 @@ void event(bool pir, float bat){
 
 #ifdef _DOOR
 void event(uint16_t dist, float bat){
-    bool motion = (dist < calDist) ? true : false;
+    bool motion = (dist < (calDist - 100)) ? true : false;
     bool stuck = false;
 
     if (!mHold) {
@@ -510,7 +514,7 @@ void event(uint16_t dist, float bat){
     http.addHeader("Content-Type", "application/json");
     //http.addHeader("Authorization", myjwt);
 
-    int ret = http.POST(payload);
+    int ret = 200; //http.POST(payload);
     //kontrola responsu
     if(ret != 200){
       Serial.printf("ret: %d", ret);
