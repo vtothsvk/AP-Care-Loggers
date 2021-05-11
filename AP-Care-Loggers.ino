@@ -17,8 +17,8 @@
  *  @note select only one
  */
 //#define _BED//AP1-M
-//#define _HALLWAY//AP4-M
-#define _DOOR //AP2-M
+#define _HALLWAY//AP4-M
+//#define _DOOR //AP2-M
 //#define _KITCHEN//AP6-M
 //#define _ALT_BED
 //#define akafuka
@@ -137,7 +137,7 @@ const IPAddress apIP(192, 168, 4, 1);
 char apSSID[20] = "niceAP-";
 
 #ifdef _BED
-char tag[5] = "1-M-"
+char tag[5] = "1-M-";
 #endif
 
 #ifdef _HALLWAY
