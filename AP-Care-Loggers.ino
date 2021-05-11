@@ -86,7 +86,7 @@ Adafruit_BME680 bme;
 
 #ifdef _ALT_BED
 #define PIR_PIN      36
-#define FSR_PIN      26
+#define FSR_PIN      0
 #define LIGHT_PIN    33
 #endif
 
