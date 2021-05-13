@@ -17,11 +17,9 @@
  *  @note select only one
  */
 //#define _BED//AP1-M
-#define _HALLWAY//AP4-M
-//#define _DOOR //AP2-M
+//#define _HALLWAY//AP4-M
+#define _DOOR //AP2-M
 //#define _KITCHEN//AP6-M
-//#define _ALT_BED
-//#define akafuka
 
 /** PIR sensor selection
  *
@@ -34,6 +32,12 @@
  *  @note if BME680 sensor is connected, uncomment the directive, leave commented otherwise 
  */
 #define _HAS_BME
+
+#define ADVERTISEMENT_INTERVAL  5//s
+
+//Diff thresholds
+#define DIFF_K  0.05//*100%
+#define SMOKE_DIFF_K DIFF_K * 3
 
 #ifdef _HALLWAY
 #define _HALLWAY_SLEEP
@@ -66,7 +70,7 @@ uint16_t calDist = 0;
 //#include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
 #define PIR_PIN      36
-#define FSR_PIN      0
+#define FSR_PIN      26
 
 #ifdef _HAS_BME
 Adafruit_BME680 bme;
@@ -84,12 +88,6 @@ Adafruit_BME680 bme;
 #endif
 #endif
 
-#ifdef _ALT_BED
-#define PIR_PIN      36
-#define FSR_PIN      0
-#define LIGHT_PIN    33
-#endif
-
 #define cTime        10000
 #define cSleepTime   10
 
@@ -99,27 +97,60 @@ Adafruit_BME680 bme;
 #define PIN_NUM_TO_MASK(PIN_NUM) ((uint64_t)((1 << (PIN_NUM - 31))) << 31)
 
 #ifdef _HALLWAY
-void event(bool pir, float bat);
+typedef struct data{
+  bool pir;
+  float bat;
+}data_t;
+
+data_t data;
+data_t olddata;
+
+void event(data_t data);
 #endif
 
 #ifdef _DOOR
-void event(uint16_t dist, float bat);
+typedef struct data{
+  bool motion;
+  uint16_t dist;
+  float bat;
+}data_t;
+
+data_t data;
+data_t olddata;
+
+void event(data_t data);
 #endif
 
 #ifdef _BED
-void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat);
+typedef struct data{
+  bool pir; 
+  uint16_t fsr; 
+  float temp; 
+  float hum; 
+  float smoke; 
+  float bat;
+}data_t;
+
+data_t data;
+data_t olddata;
+
+void event(data_t data);
 #endif
 
 #ifdef _KITCHEN
-void event(bool pir, uint16_t light, float temp, float hum, float smoke, float bat);
-#endif
+typedef struct data{
+  bool pir; 
+  uint16_t light; 
+  float temp; 
+  float hum; 
+  float smoke; 
+  float bat;
+}data_t;
 
-#ifdef _ALT_BED
-void event(bool pir, uint16_t fsr, uint16_t light, float bat);
-#endif
+data_t data;
+data_t olddata;
 
-#ifdef akafuka
-void event(int8_t rssi);
+void event(data_t data);
 #endif
 
 const char* ntpServer = "pool.ntp.org";
@@ -166,6 +197,12 @@ WebServer webServer(80);
 Preferences preferences;
 
 HTTPClient http;
+
+bool diffCheck(uint8_t val, uint8_t oldVal, float K);
+bool diffCheckF(float val, float oldVal, float K);
+void diffEvent(data_t data, data_t olddata);
+
+unsigned long lastAdv;
 
 void wifiConfig(){
   preferences.begin("wifi-config");
@@ -309,84 +346,52 @@ void setup(){
 }//setup
 
 void loop(){
-  float bat = M5.Axp.GetBatVoltage();
+  data.bat = M5.Axp.GetBatVoltage();
   #ifdef _HALLWAY
-  bool pir = digitalRead(PIR_PIN);
-  Serial.printf("Pir: %d\r\nBat: %.2f\r\n", pir, bat);
-  event(pir, bat);
+  data.pir = digitalRead(PIR_PIN);
   #endif
 
   #ifdef _DOOR
-  uint16_t dist = tof.readRangeContinuousMillimeters();
-  Serial.printf("dist: %d\r\nBat: %.2f\r\n", dist, bat);
-  event(dist, bat);
+  data.dist = tof.readRangeContinuousMillimeters();
   #endif
 
   #ifdef _BED
-  bool pir = digitalRead(PIR_PIN);
-  uint16_t fsr = analogRead(FSR_PIN);
+  data.pir = digitalRead(PIR_PIN);
+  data.fsr = analogRead(FSR_PIN);
 
   #ifdef _HAS_BME
-  float temp = bme.readTemperature();
-  float hum = bme.readHumidity();
-  float smoke = bme.readGas();
+  data.temp = bme.readTemperature();
+  data.hum = bme.readHumidity();
+  data.smoke = bme.readGas();
   #else
-  float temp = 0.0;
-  float hum = 0.0;
-  float smoke = 0.0;
+  data.temp = 0.0;
+  data.hum = 0.0;
+  data.smoke = 0.0;
   #endif
-
-  Serial.printf("Pir: %d\r\nFSR: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, fsr, temp, hum, smoke);
-  event(pir, fsr, temp, hum, smoke, bat);
-  /*
-  float dummy = 0;
-  Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
-  event(pir, fsr, dummy, dummy,)
-  */
   #endif
 
   #ifdef _KITCHEN
-  bool pir = digitalRead(PIR_PIN);
-  uint16_t light = 4096 - analogRead(LIGHT_PIN);
+  data.pir = digitalRead(PIR_PIN);
+  data.light = 4096 - analogRead(LIGHT_PIN);
 
   #ifdef _HAS_BME
-  float temp = bme.readTemperature();
-  float hum = bme.readHumidity();
-  float smoke = bme.readGas();
+  data.temp = bme.readTemperature();
+  data.hum = bme.readHumidity();
+  data.smoke = bme.readGas();
   #else
-  float temp = 0.0;
-  float hum = 0.0;
-  float smoke = 0.0;
+  data.temp = 0.0;
+  data.hum = 0.0;
+  data.smoke = 0.0;
+  #endif
   #endif
 
-  Serial.printf("Pir: %d\r\nLight: %d\r\nTemp: %.1f\r\nHum: %.1f\r\nGas %.1f\r\n", pir, light, temp, hum, smoke);
-  event(pir, light, temp, hum, smoke, bat);
-  /*
-  float dummy = 0;
-  Serial.printf("Pir: %d\r\nLight: %d\r\n", pir, light);
-  event(pir, light, dummy, dummy,)
-  */
-  #endif
+  if ((millis() - lastAdv) >= (ADVERTISEMENT_INTERVAL * 60 * 1000)) {
+    event(data);
+    lastAdv = millis();
+  } else {
+    diffEvent(data, olddata);
+  }
 
-  #ifdef _ALT_BED
-  bool pir = digitalRead(PIR_PIN);
-  uint16_t fsr = analogRead(FSR_PIN);
-  uint16_t light = analogRead(LIGHT_PIN);
-
-  Serial.printf("Pir: %d\r\nFSR: %d\r\nLight: %d\r\n", pir, fsr, light);
-  event(pir, fsr, light, bat);
-  /*
-  float dummy = 0;
-  Serial.printf("Pir: %d\r\nFSR: %d\r\n", pir, fsr);
-  event(pir, fsr, dummy, dummy,)
-  */
-  #endif
-
-  #ifdef akafuka
-  wifi_ap_record_t stats;
-  esp_wifi_sta_get_ap_info(&stats);
-  event(stats.rssi);
-  #endif
   M5.update();
 
   if (M5.BtnA.wasPressed()) {
@@ -405,13 +410,13 @@ void loop(){
   M5.Axp.ScreenBreath(0);
   esp_deep_sleep_start();
   #endif
-  delay(1000);
+
+  olddata = data;
+  delay(ADVERTISEMENT_INTERVAL * 1000);
 }//loop
 
 #ifdef _HALLWAY
-void event(bool pir, float bat){
-    //sprintf(&payload[0], "{ \"T\": %.1f, \"H\": %.1f }", t, h);
-    //timestamp += (long)(millis() / 1000) + 60;
+void event(data_t data){
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
 
@@ -428,18 +433,11 @@ void event(bool pir, float bat){
     { \"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
     \"devId\": \"%s\",\
     \"includeTS\" : 0, \
-    \"plen\": 2 }", SN, kid, (long)epoch, bat, stats.rssi, (long)epoch, pir, myId);
-
-    /*Serial.println(payload);
-    char myjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
-    Serial.printf("auth: %s\r\n", myjwt);*/
+    \"plen\": 2 }", SN, kid, (long)epoch, data.bat, stats.rssi, (long)epoch, data.pir, myId);
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -452,11 +450,102 @@ void event(bool pir, float bat){
     //koniec
     http.end();
 }
+
+void diffEvent(data_t data, data_t olddata) {
+  struct tm mytime;
+    getLocalTime(&mytime);
+    time_t epoch = mktime(&mytime);
+    Serial.printf("Timestamp: %ld", (long)epoch);
+    wifi_ap_record_t stats;
+    esp_wifi_sta_get_ap_info(&stats);
+
+    sprintf(&payload[0], "\
+    {\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"body\": [", SN, kid, myId);
+
+    uint8_t plen = 0;
+    char buffer[256];
+
+    if (data.pir != olddata.pir) {
+      plen++;
+      sprintf(buffer, "{\"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.pir);
+      strcat(payload, buffer);
+    }
+
+    if (plen) {
+      strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], ", (long)epoch, data.bat, stats.rssi);
+    }
+
+    sprintf(buffer, "\"plen\": %d }", plen);
+    strcat(payload, buffer);
+
+    if (plen) {
+      http.begin(serverName);
+
+      http.addHeader("Content-Type", "application/json");
+
+      int ret = http.POST(payload);
+      //kontrola responsu
+      if(ret != 200){
+        Serial.printf("ret: %d", ret);
+      } else {
+        Serial.println("OK");
+      }
+
+      //koniec
+      http.end();
+    }
+}
 #endif
 
 #ifdef _DOOR
 void event(uint16_t dist, float bat){
-    bool motion = (dist < (calDist - 100)) ? true : false;
+    data.motion = (data.dist < (calDist - 100)) ? true : false;
+    struct tm mytime;
+    getLocalTime(&mytime);
+    time_t epoch = mktime(&mytime);
+    Serial.printf("Timestamp: %ld", (long)epoch);
+    wifi_ap_record_t stats;
+    esp_wifi_sta_get_ap_info(&stats);
+    sprintf(&payload[0], "{\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"body\":\
+    [{\"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
+    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"plen\": 2 }", SN, kid, (long)epoch, data.motion, (long)epoch, data.bat, stats.rssi, myId);
+    Serial.print(payload);
+    char myjwt[410] = "Bearer "; 
+    size_t jlen;
+    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
+    Serial.printf("auth: %s\r\n", myjwt);
+
+    http.begin(serverName);
+
+    http.addHeader("Content-Type", "application/json");
+
+    int ret = http.POST(payload);
+    //kontrola responsu
+    if(ret != 200){
+      Serial.printf("ret: %d", ret);
+    } else {
+      Serial.println("OK");
+    }
+
+    //koniec
+    http.end();
+}
+
+void diffEvent(data_t data, data_t olddata) {
+    data.motion = (data.dist < (calDist - 100)) ? true : false;
     bool stuck = false;
 
     if (!mHold) {
@@ -466,7 +555,7 @@ void event(uint16_t dist, float bat){
         }
       }
 
-      if (motion && (!stuckMute)) {
+      if (data.motion && (!stuckMute)) {
         if (!wasMotion) {
           wasMotion = true;
           motionTime = millis();
@@ -484,9 +573,9 @@ void event(uint16_t dist, float bat){
       }
     }
 
-    mHold = motion;
+    mHold = data.motion;
 
-    Serial.printf("m %d, was: %d, mt %ld, t %ld", motion, wasMotion, motionTime, millis());
+    Serial.printf("m %d, was: %d, mt %ld, t %ld", data.motion, wasMotion, motionTime, millis());
 
     struct tm mytime;
     getLocalTime(&mytime);
@@ -494,41 +583,61 @@ void event(uint16_t dist, float bat){
     Serial.printf("Timestamp: %ld", (long)epoch);
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
-    sprintf(&payload[0], "{\
+
+    sprintf(&payload[0], "\
+    {\
     \"sn\": \"%s\",\
     \"kid\": \"%s\",\
-    \"body\":\
-    [{\"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }, { \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
-    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
     \"devId\": \"%s\",\
     \"includeTS\" : 0, \
-    \"plen\": 2 }", SN, kid, (long)epoch, motion, stuck, (long)epoch, bat, stats.rssi, myId);
-    Serial.print(payload);
-    char myjwt[410] = "Bearer "; 
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
-    Serial.printf("auth: %s\r\n", myjwt);
+    \"body\": [", SN, kid, myId);
 
-    http.begin(serverName);
+    uint8_t plen = 0;
+    char buffer[256];
 
-    http.addHeader("Content-Type", "application/json");
-    //http.addHeader("Authorization", myjwt);
-
-    int ret = 200; //http.POST(payload);
-    //kontrola responsu
-    if(ret != 200){
-      Serial.printf("ret: %d", ret);
-    } else {
-      Serial.println("OK");
+    if (data.motion != olddata.motion) {
+      plen++;
+      sprintf(buffer, "{\"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }, { \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.motion, stuck);
+      strcat(payload, buffer);
     }
 
-    //koniec
-    http.end();
+    if (stuck) {
+      if (plen) strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{\"LoggerName\": \"ToF\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"stuck\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, stuck);
+      strcat(payload, buffer);
+    }
+
+    if (plen) {
+      strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], ", (long)epoch, data.bat, stats.rssi);
+    }
+
+    sprintf(buffer, "\"plen\": %d }", plen);
+    strcat(payload, buffer);
+
+    if (plen) {
+      http.begin(serverName);
+
+      http.addHeader("Content-Type", "application/json");
+
+      int ret = http.POST(payload);
+      //kontrola responsu
+      if(ret != 200){
+        Serial.printf("ret: %d", ret);
+      } else {
+        Serial.println("OK");
+      }
+
+      //koniec
+      http.end();
+    }
 }
 #endif
 
 #ifdef _BED
-void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat){
+void event(data_t data){
     struct tm mytime;
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
@@ -547,7 +656,7 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     \"devId\": \"%s\",\
     \"includeTS\" : 0, \
     \"plen\": 4 }", SN, kid, 
-    (long)epoch, pir, (long)epoch, fsr, (long)epoch, temp, hum, smoke, (long)epoch, bat, stats.rssi, myId);
+    (long)epoch, data.pir, (long)epoch, data.fsr, (long)epoch, data.temp, data.hum, data.smoke, (long)epoch, data.bat, stats.rssi, myId);
     Serial.print(payload);
     char myjwt[410] = "Bearer ";
     size_t jlen;
@@ -557,7 +666,6 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -570,10 +678,76 @@ void event(bool pir, uint16_t fsr, float temp, float hum, float smoke, float bat
     //koniec
     http.end();
 }
+
+void diffEvent(data_t data, data_t olddata) {
+  struct tm mytime;
+    getLocalTime(&mytime);
+    time_t epoch = mktime(&mytime);
+    Serial.printf("Timestamp: %ld", (long)epoch);
+    wifi_ap_record_t stats;
+    esp_wifi_sta_get_ap_info(&stats);
+
+    sprintf(&payload[0], "\
+    {\
+    \"sn\": \"%s\",\
+    \"kid\": \"%s\",\
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"body\": [", SN, kid, myId);
+
+    uint8_t plen = 0;
+    char buffer[256];
+
+    if (data.pir != olddata.pir) {
+      plen++;
+      sprintf(buffer, "{\"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.pir);
+      strcat(payload, buffer);
+    }
+
+    if (diffCheck(data.fsr, olddata.fsr, DIFF_K)) {
+      if (plen) strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.fsr);
+      strcat(payload, buffer);
+    }
+
+    if (diffCheckF(data.smoke, olddata.smoke, SMOKE_DIFF_K)) {
+      if (plen) strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.temp, data.hum, data.smoke);
+      strcat(payload, buffer);
+    }
+
+    if (plen) {
+      strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], ", (long)epoch, data.bat, stats.rssi);
+    }
+
+    sprintf(buffer, "\"plen\": %d }", plen);
+    strcat(payload, buffer);
+
+    if (plen) {
+      http.begin(serverName);
+
+      http.addHeader("Content-Type", "application/json");
+
+      int ret = http.POST(payload);
+      //kontrola responsu
+      if(ret != 200){
+        Serial.printf("ret: %d", ret);
+      } else {
+        Serial.println("OK");
+      }
+
+      //koniec
+      http.end();
+    }
+}
 #endif
 
 #ifdef _KITCHEN
-void event(bool pir, uint16_t light, float temp, float hum, float smoke, float bat){
+void event(data_t data){
     struct tm mytime;
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
@@ -591,17 +765,12 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     \"devId\": \"%s\",\
     \"includeTS\" : 0, \
     \"plen\": 2 }", SN, kid, 
-    (long)epoch, pir, (long)epoch, temp, hum, smoke, (long)epoch, bat, stats.rssi, myId);
+    (long)epoch, data.pir, (long)epoch, data.temp, data.hum, data.smoke, (long)epoch, data.bat, stats.rssi, myId);
     Serial.print(payload);
-    char myjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
-    Serial.printf("auth: %s\r\n", myjwt);
 
     http.begin(serverName);
 
     http.addHeader("Content-Type", "application/json");
-    //http.addHeader("Authorization", myjwt);
 
     int ret = http.POST(payload);
     //kontrola responsu
@@ -614,88 +783,64 @@ void event(bool pir, uint16_t light, float temp, float hum, float smoke, float b
     //koniec
     http.end();
 }
-#endif
 
-#ifdef _ALT_BED
-void event(bool pir, uint16_t fsr, uint16_t light, float bat){
+void diffEvent(data_t data, data_t olddata) {
     struct tm mytime;
     getLocalTime(&mytime);
     time_t epoch = mktime(&mytime);
     Serial.printf("Timestamp: %ld", (long)epoch);
     wifi_ap_record_t stats;
     esp_wifi_sta_get_ap_info(&stats);
+
     sprintf(&payload[0], "\
     {\
     \"sn\": \"%s\",\
     \"kid\": \"%s\",\
-    \"body\":\
-    [{\"LoggerName\": \"PIR2\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
-    { \"LoggerName\": \"FSR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"pressure\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
-    { \"LoggerName\": \"Photoresistor\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"light\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}, \
-    { \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
-    \"devId\": \"%s\"\
-    \"offlineId\": \"%s\"}", SN, kid, 
-    (long)epoch, pir, (long)epoch, fsr, (long)epoch, light, (long)epoch, bat, stats.rssi, myId);
-    Serial.print(payload);
-    char myjwt[400] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
-    Serial.printf("auth: %s\r\n", myjwt);
+    \"devId\": \"%s\",\
+    \"includeTS\" : 0, \
+    \"body\": [", SN, kid, myId);
 
-    http.begin(serverName);
+    uint8_t plen = 0;
+    char buffer[256];
 
-    http.addHeader("Content-Type", "application/json");
-    //http.addHeader("Authorization", myjwt);
-
-    int ret = http.POST(payload);
-    //kontrola responsu
-    if(ret != 200){
-      Serial.printf("ret: %d", ret);
-    } else {
-      Serial.println("OK");
+    if (data.pir != olddata.pir) {
+      plen++;
+      sprintf(buffer, "{\"LoggerName\": \"PIR\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"motion\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.pir);
+      strcat(payload, buffer);
     }
 
-    //koniec
-    http.end();
-}
-#endif
-
-#ifdef akafuka
-void event(int8_t rssi){
-    //sprintf(&payload[0], "{ \"T\": %.1f, \"H\": %.1f }", t, h);
-    //timestamp += (long)(millis() / 1000) + 60;
-    struct tm mytime;
-    getLocalTime(&mytime);
-    time_t epoch = mktime(&mytime);
-    Serial.printf("Timestamp: %ld", (long)epoch);
-    sprintf(&payload[0], "{\
-    \"sn\": \"%s\",\
-    \"kid\": \"%s\",\
-    \"body\":\
-    [{\"LoggerName\": \"WiFi\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], \
-    \"devId\": \"%s\"\
-    \"offlineId\": \"%s\"}", SN, kid, (long)epoch, rssi, myId);
-    Serial.print(payload);
-    char myjwt[410] = "Bearer ";
-    size_t jlen;
-    auth.createJWT((uint8_t*)myjwt + strlen(myjwt), sizeof(myjwt) - strlen(myjwt), &jlen, epoch);
-    Serial.printf("auth: %s\r\n", myjwt);
-
-    http.begin(serverName);
-
-    http.addHeader("Content-Type", "application/json");
-    //http.addHeader("Authorization", myjwt);
-
-    int ret = http.POST(payload);
-    //kontrola responsu
-    if(ret != 200){
-      Serial.printf("ret: %d", ret);
-    } else {
-      Serial.println("OK");
+    if (diffCheckF(data.smoke, olddata.smoke, SMOKE_DIFF_K)) {
+      if (plen) strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"BME680\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"temperature\",\"Value\": %f }, { \"Name\": \"humidity\",\"Value\": %f }, { \"Name\": \"smoke\",\"Value\": %f }], \"ServiceData\": [], \"DebugData\": []}", (long)epoch, data.temp, data.hum, data.smoke);
+      strcat(payload, buffer);
     }
 
-    //koniec
-    http.end();
+    if (plen) {
+      strcat(payload, ", ");
+      plen++;
+      sprintf(buffer, "{ \"LoggerName\": \"SysInfo\", \"Timestamp\": %ld, \"MeasuredData\": [{ \"Name\": \"bat_v\",\"Value\": %f }, { \"Name\": \"wifi_rssi\",\"Value\": %d }], \"ServiceData\": [], \"DebugData\": []}], ", (long)epoch, data.bat, stats.rssi);
+    }
+
+    sprintf(buffer, "\"plen\": %d }", plen);
+    strcat(payload, buffer);
+
+    if (plen) {
+      http.begin(serverName);
+
+      http.addHeader("Content-Type", "application/json");
+
+      int ret = http.POST(payload);
+      //kontrola responsu
+      if(ret != 200){
+        Serial.printf("ret: %d", ret);
+      } else {
+        Serial.println("OK");
+      }
+
+      //koniec
+      http.end();
+    }
 }
 #endif
 
@@ -879,4 +1024,12 @@ void OTAhandler(){
     }
     M5.update();
   }
+}
+
+bool diffCheck(uint8_t val, uint8_t oldVal, float K) {
+  return (((val - oldVal) > (DIFF_K * val)) || ((oldVal - val) > (DIFF_K * val)));
+}
+
+bool diffCheckF(float val, float oldVal, float K) {
+  return (((val - oldVal) > (DIFF_K * val)) || ((oldVal - val) > (DIFF_K * val)));
 }
