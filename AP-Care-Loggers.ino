@@ -505,7 +505,7 @@ void diffEvent(data_t data, data_t olddata) {
 #endif
 
 #ifdef _DOOR
-void event(uint16_t dist, float bat){
+void event(data_t data){
     data.motion = (data.dist < (calDist - 100)) ? true : false;
     struct tm mytime;
     getLocalTime(&mytime);
