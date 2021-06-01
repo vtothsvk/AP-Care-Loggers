@@ -47,6 +47,11 @@
 #endif
 #endif
 
+#define FORCED_WIFI
+#define WIFI_SSID  "niCElife1"
+#define WIFI_PASS  "Apnursethebest"
+#define CON_TO      20000//ms
+
 #ifdef _DOOR
 #include <VL53L0X.h>
 VL53L0X tof;
@@ -126,7 +131,7 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
 
-const char* serverName = "http://192.168.2.7:1880/niceBridge";
+const char* serverName = "http://raspberrypi.local:1880/niceBridge";
 
 char payload[1024];
 long cStart;
@@ -209,11 +214,32 @@ void forceWifiConfig(){
     }
 }
 
+unsigned long conTime = 0;
+
+void wifiConnect(void) {
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  Serial.print("Connecting to WiFi");
+
+  conTime = millis();
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(200);
+    Serial.print(".");
+    if ((millis() - conTime) >= cTime) {
+      esp_restart();
+    }
+  }
+
+  Serial.println();
+  Serial.println("Connected ^^");
+}
+
 void setup(){
     M5.begin();
     M5.Axp.SetChargeCurrent(100);
     //M5.Axp.ScreenBreath(0);
-    //Wire.begin();
+    //Wire.begian();
     //Serial init
     Serial.begin(115200);
     //Wire.begin(0, 26);
@@ -268,7 +294,11 @@ void setup(){
     pinMode(LIGHT_PIN, INPUT);
     #endif
 
+    #ifdef FORCED_WIFI
+    wifiConnect();
+    #else
     wifiConfig();
+    #endif
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
